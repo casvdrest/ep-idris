@@ -1,4 +1,4 @@
-# Experimentation Project: Trustworthy shell scripts using dependend types in Idris
+# Experimentation Project: Trustworthy shell scripts using dependent types in Idris
 
 ## Motivation 
 
@@ -10,6 +10,36 @@ This design implies that contracts are only checked dynamically, even though it 
 
 ## Goal
 
-The goal of this project is to implement a subset of Bash as an EDSL in [Idris](https://www.idris-lang.org/), utilizing Idris' dependend type system to provide more guarantees about the resources a script will use during its lifetime. 
+The goal of this project is to implement a subset of Bash as an EDSL in [Idris](https://www.idris-lang.org/), utilizing Idris' dependent type system to provide more guarantees about the resources a script will use during its lifetime. 
+
+### Description
+
+The goal of this project can be roughly divided into two parts:
+
+* Statically ensure that scripts do not require permissions beyond what's defined in their contract. 
+* Prevent scripts from executing when they require permissions beyond what is implied by the ambient permissions of the user that runs the script. This will need to be able to account for commands that may change the ambient permission (```su```/```sudo```) or commands that change the permissions of a file/directory (```chmod```/```chown```). 
+
+Furthermore it is important to recognise that all but a few commands commonly used from within a Bash shell are simply binaries that reside in one of de directories specified in ```$PATH```, meaning that there is no real difference between a call to ```ls``` and a call to an arbitrary executable (at least from a technical point of view). Hence it might be worthwile to come up with some kind of abstraction, and define the commonly used commands in Bash in terms of this abstraction.
+
+Such an approach may also allow for automated testing of the contracts associated with commands in a sandbox environment. 
+
+### Minimal viable product
+
+A library which allows for definition of shell scripts that use a small amount of commands, for which it is statically checked that the permissions specified in the contract are respected, as well as checks that rule out certain other types of problems (e.g. the user running a script doesn't have the required permissions to do so). 
+
+## Getting Started
+
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
+
+### Prerequisites
+
+Running the project requires [Idris](https://www.idris-lang.org/) to be installed on the target computer. Installation instructions for all mainstream operating systems can be found [here](https://github.com/idris-lang/Idris-dev/wiki/Installation-Instructions). 
+
+### Installing
+
+**TODO**
+
+
+
 
 
