@@ -1,7 +1,5 @@
 # Experimentation Project: Trustworthy shell scripts using dependent types in Idris
 
-## Motivation 
-
 When executing shell scripts obtained from a third party, there is no way of knowing that such a script won't cause damage to your computer without examining the actual contents of the script. 
 
 [Shill](http://shill.seas.harvard.edu/shill-osdi-2014.pdf) is a shell scripting language designed to address this problem, which requires scripts to present a so-called *contract*, which specifies which resources (and what level of access to them) the script needs. The script is then executed in a sandbox that ensures that the script does not overstep the permissions defined in its contract. 
@@ -38,6 +36,13 @@ Running the project requires [Idris](https://www.idris-lang.org/) to be installe
 ### Installing
 
 **TODO**
+
+## Relevant Literature
+
+* [Idris, a general-purpose dependently typed programming language: Design and implementation](https://www.cambridge.org/core/journals/journal-of-functional-programming/article/idris-a-generalpurpose-dependently-typed-programming-language-design-and-implementation/418409138B4452969AC0736DB0A2C238)
+* [Programming and reasoning with algebraic effects and dependent types](https://dl.acm.org/citation.cfm?id=2500581)
+* [SHILL: A Secure Shell Scripting Language](http://shill.seas.harvard.edu/shill-osdi-2014.pdf)
+* [The Semantics of Version Control](https://dl.acm.org/citation.cfm?id=2661137)
 
 
 
