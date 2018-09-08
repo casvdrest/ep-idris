@@ -43,6 +43,7 @@ Running the project requires [Idris](https://www.idris-lang.org/) to be installe
 * [Programming and reasoning with algebraic effects and dependent types](https://dl.acm.org/citation.cfm?id=2500581)
 * [SHILL: A Secure Shell Scripting Language](http://shill.seas.harvard.edu/shill-osdi-2014.pdf)
 * [The Semantics of Version Control](https://dl.acm.org/citation.cfm?id=2661137)
+* [State Machines All The Way Down](https://www.idris-lang.org/drafts/sms.pdf)
 
 
 
