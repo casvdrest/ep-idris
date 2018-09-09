@@ -33,9 +33,9 @@ These instructions will get you a copy of the project up and running on your loc
 
 Running the project requires [Idris](https://www.idris-lang.org/) to be installed on the target computer. Installation instructions for all mainstream operating systems can be found [here](https://github.com/idris-lang/Idris-dev/wiki/Installation-Instructions). 
 
-### Installing
+### Installing and Running
 
-**TODO**
+Compile with `idris -p contrib File.idr -o script` and run. Alternatively, fire up interactive mode (`idris -p contrib File.idr`) and run with `:exec run script`. 
 
 ## Relevant Literature
 
