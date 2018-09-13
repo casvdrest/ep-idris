@@ -29,8 +29,7 @@ execAndReadOutput cmd = do
 interface Shell (m : Type -> Type) where
   access : FMod -> Type
   request : (file : FileInfo) -> (mod : FMod) -> ST m Var [add (access mod)]
-  release : (file : Var) -> (mod : FMod) -> ST m () [remove file (access mod)]
-  cat  : (file : Var) -> ST m String [file ::: access R]
+  cat  : (file : Var) -> ST m String [remove file (access R)]
   echo : ConsoleIO m => String -> ST m () []
 
 implementation Shell IO where
@@ -38,11 +37,11 @@ implementation Shell IO where
   cat file = do
     MkFileInfo path _ <- read file
     captured <- lift $ execAndReadOutput $ "cat " ++ path
+    delete file
     pure captured
   request f _ = do
     file <- new f
     pure file
-  release file _ = delete file
   echo = putStr
 
 exampleFile : FileInfo
@@ -59,5 +58,3 @@ script : (Shell m, ConsoleIO m) => ST m () []
 script = do
   file <- request exampleFile R
   echo !(cat file)
-  release file R
-  pure ()
