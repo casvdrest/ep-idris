@@ -2,51 +2,49 @@ module ShellState
 
 import Data.HVect
 
-%access export
+%access public export
 
 Name : Type 
 Name = String
 
-public export
 data User : Type where 
     MkUser : Name -> Name -> User 
 
-public export
 Permission : Type
 Permission = Vect 3 Bool
 
-public export
 FPermission : Type
 FPermission = Vect 3 Permission
 
-public export
 data FType = F
            | D
 
-public export
+Eq FType where 
+    F == F = True 
+    D == D = True 
+    _ == _ = False
+
 data FMod = R
           | W
           | X
 
-public export
 data FileMD : Type where
     MkFileMD : FType -> FPermission -> User -> FileMD
 
-public export
-data FileInfo : Type where 
-    MkFileInfo : String -> FileMD -> FileInfo
+ftype : FileMD -> FType 
+ftype (MkFileMD type _ _) = type
 
-public export 
+data FileInfo : FType -> Type where 
+    MkFileInfo : String -> (md : FileMD) -> FileInfo (ftype md)
+
 data Path : Type where 
     FilePath : List Name -> Name -> Path 
     DirPath : List Name -> Path
 
-public export
 data FSTree : Type where 
-    FSLeaf : Name -> FSTree
-    FSNode : Name -> List FSTree -> FSTree
+    FSLeaf : Name -> FileInfo F -> FSTree
+    FSNode : Name -> FileInfo D -> List FSTree -> FSTree
      
-public export 
 data FSInfo : Type where 
     MkFSInfo : List (List FSTree) -> FSInfo
 
@@ -55,15 +53,3 @@ Capability = (Path, List FMod)
 
 SState : Type  
 SState = HVect [User, FSInfo, List Capability] 
-
-Cmd : String -> Type 
-Cmd str = if str == "Int" then Int else Bool
-
-data So : Bool -> Type where 
-    Oh : So True
-
-isTen : Int -> Bool 
-isTen x = x == 10
-
-f : (x : Int) -> So (isTen x)
-f = Oh 
