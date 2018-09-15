@@ -2,9 +2,10 @@ module File
 
 import Control.ST
 import Control.ST.ImplicitCall
-import Permissions
 import System
 import Data.Vect
+
+import TSS.FileSystem
 
 -- SO hack to capture output from stdout when
 -- executing a command
