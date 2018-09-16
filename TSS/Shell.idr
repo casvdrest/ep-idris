@@ -30,3 +30,5 @@ syntax ls [path] =
   }}-
     id
   -{{ const True }}
+
+ST IO () [contract ::: Composite]

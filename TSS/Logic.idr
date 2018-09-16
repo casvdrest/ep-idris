@@ -4,6 +4,7 @@ import public FileSystem
 
 import Control.ST
 import Data.Vect
+import Data.So
 
 %access public export
 
@@ -16,25 +17,23 @@ import Data.Vect
 data Capability : Type where
   MkCapability : Path -> FMod -> Bool -> Capability
 
-||| The global state (as of yet) consists of three main components:
-||| * The current user
-||| * A list of capabilities used by the script
-||| * A list of file system fragments, resulting from capabilities
-|||
-||| Note that the number of capabilities and relevant file system fragments
-||| is required to be equal.
-ShellState : {n : Nat} -> Type
-ShellState {n} =
-  Composite
-    [ State User
-    , State (Vect n Capability)
-    , State (Vect n FSTree    )
-    ]
 
 ||| Define a predicate on a given type as a function from that
 ||| type to 'Bool'
 Pred : Type -> Type
 Pred t = t -> Bool
+
+||| The global state (as of yet) consists of three main components:
+||| * The current user
+||| * A list of capabilities used by the script
+||| * File system information
+|||
+||| Note that the number of capabilities and relevant file system fragments
+||| is required to be equal.
+data ShellState : Type where
+  MkShellState : User -> FSTree
+                      -> List Capability
+                      -> ShellState
 
 data Command : Type where
    MkCommand : (Pred ShellState) -> (ShellState -> ShellState)
@@ -45,28 +44,65 @@ data Command : Type where
 data BinaryInfo : Type where
   MkBinaryInfo : String -> Command -> BinaryInfo
 
--- Syntax definitions to make the definition of commands easier
+-- Define special notation for defining pre and post conditions
 syntax "{{" [pre] "}}-" [f] "-{{" [post] "}}" = MkCommand pre f post
 syntax assume [name] as [command] = MkBinaryInfo name command
-syntax "~" [pred] = not . pred
 
+infixl 7 ===>
 infixl 6 /\
 infixl 5 \/
+infixl 4 <==>
 
+-- Boolean negation; this is a unary operator so use a special syntax
+-- definition
+syntax "~" [pred] = not . pred
+
+||| Atomic 'True'
+true : a -> Bool
+true = const True
+
+||| Atomic 'False'
+false : a -> Bool
+false = ~true
+
+||| Conjunction
 (/\) : (a -> Bool) -> (a -> Bool) -> (a -> Bool)
 p /\ q = (\v => p v && q v)
 
+||| Disjunction
 (\/) : (a -> Bool) -> (a -> Bool) -> (a -> Bool)
 p \/ q = (\v => p v || q v)
 
+||| Implication
+(===>) : (a -> Bool) -> (a -> Bool) -> (a -> Bool)
+p ===> q = ~p /\ q
+
+||| Bi-Implication
+(<==>) : (a -> Bool) -> (a -> Bool) -> (a -> Bool)
+(<==>) p q = p ===> q /\ q ===> p
+
+||| Assert that a file exists in the state represented by the tree
+||| contained in the current state
 exists : Path -> ShellState -> Bool
-exists = ?exists
+exists path (MkShellState _ fs _) = isJust (getFile path fs)
 
+||| Asserts whether the vertex contained at the provided path is a file in
+||| the file tree contained in the shell state
 isFile : Path -> ShellState -> Bool
-isFile = ?isFile
+isFile path (MkShellState _ fs _) =
+  case getFile path fs of
+    (Just (MkFileInfo _ (MkFileMD t _ _))) => t == F
+    Nothing                                => False
 
+||| Asserts whether the vertex contained at the provided path is a directory in
+||| the file tree contained in the shell state
 isDirectory : Path -> ShellState -> Bool
-isDirectory = ?isDirectory
+isDirectory path st = not (isFile path st)
 
+||| Assert that the current user has read access to the file contained at
+||| The given path
 accessRead : Path -> ShellState -> Bool
-accessRead = ?accessRead
+accessRead path (MkShellState u fs _) =
+  case getFile path fs of
+    (Just (MkFileInfo _ md)) => canRead u md
+    Nothing                  => False

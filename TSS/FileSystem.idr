@@ -57,38 +57,83 @@ data FMod = R
 ||| * Type of the file
 ||| * Permission bits
 ||| * Owner (user object)
-data FileMD : FType -> FPermission -> User -> Type where
-  MkFileMD : (t : FType) -> (p : FPermission) -> (u : User) -> FileMD t p u
+data FileMD : Type where
+  MkFileMD : (t : FType) -> (p : FPermission) -> (u : User) -> FileMD
+
+typeFromMD : FileMD -> FType
+typeFromMD (MkFileMD t _ _) = t
 
 ||| Contains all relevant info about files -- e.g. it's name, and metadata
-data FileInfo : Name -> FileMD t p u -> Type where
-  MkFileInfo : (name : Name) -> (md : FileMD t p u) -> FileInfo name md
+data FileInfo : Type where
+  MkFileInfo : (name : Name) -> (md : FileMD) -> FileInfo
 
 ||| Models a path through the file system tree
 data Path : Type where
-  MkPath : List Name -> Maybe Name -> Path
-
-||| Asserts that the provided file metadata belongs to a directory
-isFile : FileMD F p u -> Bool
-isFile _ = True
-
-||| Asserts that the provided file metadata belongs to a file
-isDir : FileMD D p u -> Bool
-isDir _ = True
+  FilePath : List Name -> Name -> Path
+  DirPath  : List Name -> Path
 
 ||| Models (part) of a file system tree. In essence, this is simply a Rose tree,
 ||| where the nodes represent directories and leaves files.
 |||
 ||| There is one key difference however: leaves are not represented as nodes with an empty
 ||| list of children, but rather as a separate data constructor. This is necessary
-||| to avoid ambiguity, since directories (nodes) may have an empty list of children
+||| to avoid ambiguity, since directori
 ||| if they don't contain any files.
 |||
 ||| Clearly, a (partial) path to a file (or directory) can be obtained by gathering
 ||| the names from all parent nodes starting from the corresponding node/leaf.
-|||
-||| To prevent the construction of semantically incorrect values for this type,
-||| a proof stating that the provided file is of the correct type is required.
 data FSTree : Type where
-  FSLeaf : ( info : FileInfo name md ) -> {auto p : So (isFile md) } -> FSTree
-  FSNode : ( info : FileInfo name md ) -> {auto p : So (isDir  md) } -> List (FSTree) -> FSTree
+  FSLeaf : ( info : FileInfo) -> FSTree
+  FSNode : ( info : FileInfo) -> List FSTree -> FSTree
+
+||| Retrieve the file situated at the given path from a file system tree
+getFile : Path -> FSTree -> Maybe FileInfo
+getFile (FilePath [] name) (FSLeaf finfo) =
+  case finfo of
+    (MkFileInfo n _) => if n == name then Just finfo else Nothing
+getFile (FilePath [] _) (FSNode _ _) = Nothing
+getFile (FilePath (x :: xs) name) (FSNode (MkFileInfo n _) tree) =
+  if n == x then
+   listToMaybe $ mapMaybe (getFile (FilePath xs name)) tree
+  else Nothing
+getFile (FilePath (x :: xs) _) (FSLeaf _) = Nothing
+
+infix 10 <?
+
+||| Extract a single permission bit
+(<?) : Permission -> FMod -> Bool
+[rp,_,_] <? R = rp
+[_,wp,_] <? W = wp
+[_,_,xp] <? X = xp
+
+||| Get the owner's permissions for a file
+pOwner : FPermission -> Permission
+pOwner [ow,_,_] = ow
+
+||| Get the owner's group's permissions for a file
+pGroup : FPermission -> Permission
+pGroup [_,gr,_] = gr
+
+||| Get other's permissions for a file
+pOther : FPermission -> Permission
+pOther [_,_,ot] = ot
+
+||| Assert that a given user is allowed to perform a certain modification on
+||| a file
+modAllowed : FMod -> User -> FileMD -> Bool
+modAllowed mod (U uname ugroup) (MkFileMD _ fperm (U fowner fgroup)) =
+  (uname == fowner  && ((pOwner fperm) <? mod)) ||
+  (ugroup == fgroup && ((pGroup fperm) <? mod)) ||
+  ((pOther fperm) <? mod)
+
+||| Assert that a user is allowed to read a file
+canRead : User -> FileMD -> Bool
+canRead = modAllowed R
+
+||| Assert that a user is allowed to write to a file
+canWrite : User -> FileMD -> Bool
+canWrite = modAllowed W
+
+||| Assert that a user is allowed to execute a file
+canExecute : User -> FileMD -> Bool
+canExecute = modAllowed X
