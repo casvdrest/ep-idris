@@ -36,10 +36,10 @@ data FType = F
            | D
 
 ||| Define equality for file types
-Eq FType where
-    F == F = True
-    D == D = True
-    _ == _ = False
+implementation Eq FType where
+  F == F = True
+  D == D = True
+  _ == _ = False
 
 ||| Describes three possible operations on files. Depending on wether
 ||| the object file is an actual file, or a directory, the semantics
@@ -52,6 +52,12 @@ Eq FType where
 data FMod = R
           | W
           | X
+
+implementation Eq FMod where
+  R == R = True
+  W == W = True
+  X == X = True
+  _ == _ = False
 
 ||| File metadata. The following information is included:
 ||| * Type of the file
@@ -71,6 +77,11 @@ data FileInfo : Type where
 data Path : Type where
   FilePath : List Name -> Name -> Path
   DirPath  : List Name -> Path
+
+implementation Eq Path where
+  (FilePath xs x) == (FilePath ys y) = xs == ys && x == y
+  (DirPath xs   ) == (DirPath ys)    = xs == ys
+  _               == _               = False
 
 ||| Models (part) of a file system tree. In essence, this is simply a Rose tree,
 ||| where the nodes represent directories and leaves files.
