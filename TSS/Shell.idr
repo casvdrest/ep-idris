@@ -23,7 +23,7 @@ ls_impl = do
 -- output to the command line. (This is obviously not what cat actually does,
 -- but we'll pretend it does anyway)
 syntax cat [file] =
-  -- cat "file" is only possible if "file" exists,
+  -- cat "file" is only possible if "file" exists,3512JE
   -- "file" does not refer to a directory, and
   -- the current user has read access on "file"
   {{ (exists file) /\
@@ -32,7 +32,7 @@ syntax cat [file] =
   }}-
     id
   -{{ true }}
-  ~> (\_ => call cat_impl)
+  ~> call cat_impl
 
 -- Embedding of the "ls" command: read the contents of a directory and
 -- write to standard output.
@@ -40,21 +40,24 @@ syntax ls [path] =
   -- A directory listing can only be done if the directory actually exists,
   -- the path refers to a directory, and the current user has read access
   -- to that directory.
-  {{ exists path /\ isDirectory path /\ accessRead path }}-
+  {{ exists path /\ isDirectory path {-/\ accessRead path -} }}-
     id
   -{{ true }}
-  ~> (\_ => call ls_impl)
+  ~> call ls_impl
 
 
 ||| Example script. Should not compile, as the path used in the
 ||| 'cat' command is not known to be the same as the one in the contract.
 |||
 ||| Should not compile!
-myScript : (path : Path) -> (contract : Var)
+myScript : (path : Path) -> {contract : Var}
                          -> ST IO () [
                               contract ::: Composite [
-                                Require (MkCapability path R)
+                                Require (MkCapability (FilePath ["directory"] "file.txt") R)
+                              , Require (MkCapability (DirPath ["directory"]) R)
                               ]
                             ]
 
-myScript path = cat (FilePath ["files"] "lorem.txt")
+myScript path = do
+  call (cat (FilePath ["directory"] "file.txt"))
+  --call (ls (DirPath ["directory"]))
