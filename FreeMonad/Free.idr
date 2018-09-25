@@ -3,11 +3,9 @@ module Free
 
 %access public export
 
-using (f : (Type -> Type), a : Type)
-  ||| Free data type: Free f a = Pure a | Bind (f (Free f a))
-  data Free : (Type -> Type) -> a -> Type where
-    Bind : f (Free f a) -> Free f a
-    Pure : a -> Free f a
+data Free : (Type -> Type) -> Type -> Type where
+  Bind : f (Free f a) -> Free f a
+  Pure : a -> Free f a
 
 ||| Functor implementation for the 'Free' datatype
 implementation Functor f => Functor (Free f) where
