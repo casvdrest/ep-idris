@@ -8,5 +8,10 @@ class Contravariant f where
 
 type Reader a = String -> a
 
+type Shower a = a -> Bool
+
 instance Functor Reader where
-  fmap f r = r . f
+  fmap f r = (\s -> f (r s))
+
+instance Contravariant Shower where
+  comap f p = (\v -> p (f v))
