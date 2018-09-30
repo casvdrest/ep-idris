@@ -210,7 +210,7 @@ implementation Functor (HoareState s m p q) where
 ||| contstraint.
 |||
 ||| Obviously, this is a temporary solution/hack, and will
-||| (hopefully) be replaced a.s.a.p.temporary
+||| (hopefully) be replaced a.s.a.p.
 
 data HWrap : (s : Type) -> (m : Type -> Type) -> (a : Type) -> Type where
   MkHWrap : AssertAtomic s m => HoareState s m p q a -> HWrap s m a
@@ -241,7 +241,7 @@ implementation AssertAtomic s m => HMonad (HWrap s m) where
           transf (MkHWrap (HS st))= HS st
 
 -- Annoyingly, idris somehow is convinced that these instances overlap, despite
--- the fact that HWrap is not a member of the `Monad` interface  ... 
+-- the fact that HWrap is not a member of the `Monad` interface  ...
 %overlapping
 implementation Monad m => HMonad m where
   pure = tmppure
