@@ -215,25 +215,33 @@ implementation Functor (HoareState s m p q) where
 data HWrap : (s : Type) -> (m : Type -> Type) -> (a : Type) -> Type where
   MkHWrap : AssertAtomic s m => HoareState s m p q a -> HWrap s m a
 
+-- Tepm. store of the bind operator
 tmpbind : Monad m => m a -> (a -> m b) -> m b
 tmpbind = (>>=)
 
+-- Temp. store of the pure function
 tmppure : Applicative f => a -> f a
 tmppure = pure
-temporary
+
+
+-- Hide existing operators
 %hide (>>=)
 %hide pure
 
+-- Interface overloading the hidden operators, mimicking the `Monad` interface
 interface HMonad (m : Type -> Type) where
   pure : a -> m a
   (>>=) : m a -> (a -> m b) -> m b
 
+-- HoareState is an instance of the fake monad as well :)
 implementation AssertAtomic s m => HMonad (HWrap s m) where
   pure = MkHWrap . hreturn
   (MkHWrap x) >>= y = MkHWrap (x `hbind` (transf . y))
     where transf : {auto p : Predicate s} -> {auto q : Predicate s} -> HWrap s m b -> HoareState s m p q b
           transf (MkHWrap (HS st))= HS st
 
+-- Annoyingly, idris somehow is convinced that these instances overlap, despite
+-- the fact that HWrap is not a member of the `Monad` interface  ... 
 %overlapping
 implementation Monad m => HMonad m where
   pure = tmppure
