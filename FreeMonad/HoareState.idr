@@ -13,15 +13,17 @@ infixl 3 :=>:
 %access public export
 
 ||| Predicate atoms
-data Atom = Access Path FMod
-          | Exists Path
-          | HasType Path
+data Atom s = Access Path FMod
+            | Exists Path
+            | HasType Path
+            | StateEq s
 
 ||| Equality for predicate atoms
-implementation Eq Atom where
+implementation Eq s => Eq (Atom s) where
   (Access p m) == (Access p' m') = p == p' && m == m'
   (Exists p) == (Exists p') = p == p'
   (HasType p) == (HasType p') = p == p'
+  (StateEq s) == (StateEq s') = s == s'
   _ == _ = False
 
 ||| Interface for monads that are able to assert atomic predicates
@@ -29,7 +31,7 @@ implementation Eq Atom where
 ||| computation context parameterizable, another context can be used
 ||| for testing purposes
 interface Monad m => AssertAtomic (s : Type) (m : Type -> Type) where
-  total assertAtom : Atom -> s -> m Bool
+  total assertAtom : Atom s -> s -> m Bool
 
 ||| Models a state predicate as an expression Tree
 data Predicate : (s : Type) -> Type where
@@ -52,9 +54,9 @@ data Predicate : (s : Type) -> Type where
   Not : Predicate s -> Predicate s
 
   -- Indicates an atomic predicate
-  At : Atom -> Predicate s
+  At : Atom s -> Predicate s
 
-  -- The 'Df' (Df) constructor indicates that the contained predicate
+  -- The 'Df' (Defer) constructor indicates that the contained predicate
   -- should not be evaluated on the current state, but rather on the
   -- next state.
   Df : Predicate s -> Predicate s
@@ -74,6 +76,11 @@ implementation Show (Predicate s) where
 
 ||| Captures failure
 data Except a = Error String | Result a
+
+
+implementation Show a => Show (Except a) where
+  show (Result x) = show x
+  show (Error msg) = "(Error " <> msg <> ")"
 
 ||| Throws an error (i.e. lift an error message into the Except data type)
 throw : String -> Except a
@@ -185,6 +192,17 @@ hrun {p} {q} (HS st) s =
       pure (s', x)
     (False, _) => pure (s, pfail (p :&&: q))
 
+implementation Functor Except where
+  map f (Result x) = Result (f x)
+  map f (Error e ) = Error e
+
+implementation Applicative Except where
+  pure = Result
+
+  (Result f) <*> (Result x) = Result (f x)
+  (Error e)  <*> _          = Error e
+  _          <*> (Error e)  = Error e
+
 ||| Functor implementation for the hoare state
 implementation Functor (HoareState s m p q) where
   map f (HS st) = HS $
@@ -195,54 +213,18 @@ implementation Functor (HoareState s m p q) where
         (Result v) => pure [s', Result $ f v, rp]
         (Error e)  => pure [s', Error e, Bottom]
 
-||| Everything below is to overload the do-notation in such a way that it can
-||| be used for both the HoareState context as well as any other monad
-|||
-||| Simply creating an instance of the Monad interface for HoareState is
-||| not possible, as the type of hbind does not match that of >>=.
-|||
-||| A futile attempt to mitigate this issue was made by creating a wrapper
-||| that discards the pre- and postcondition. However, with this approach
-||| implementing the `pure` function in the required applicative instance
-||| proved to be difficult, as there was no easy way to impose the AssertAtomic
-||| constraint on the input types `s` and `m`. This is problematic as the
-||| constructors needed to implement the `pure` function do impose this
-||| contstraint.
-|||
-||| Obviously, this is a temporary solution/hack, and will
-||| (hopefully) be replaced a.s.a.p.
+||| Applicative implementation for the hoare state
+implementation AssertAtomic s m => Applicative (HoareState s m p q) where
+  pure a = HS $
+    \p, s => pure [s, Result a, p]
+  (HS st) <*> (HS st') = HS $
+    \p, s =>
+      let [s', f, rp] =
+        !(st p s) in
+      let [s'', y, rp'] =
+        !(st' p s) in
+       pure [s'', (f <*> y), rp']
 
-data HWrap : (s : Type) -> (m : Type -> Type) -> (a : Type) -> Type where
-  MkHWrap : AssertAtomic s m => HoareState s m p q a -> HWrap s m a
-
--- Tepm. store of the bind operator
-tmpbind : Monad m => m a -> (a -> m b) -> m b
-tmpbind = (>>=)
-
--- Temp. store of the pure function
-tmppure : Applicative f => a -> f a
-tmppure = pure
-
-
--- Hide existing operators
-%hide (>>=)
-%hide pure
-
--- Interface overloading the hidden operators, mimicking the `Monad` interface
-interface HMonad (m : Type -> Type) where
-  pure : a -> m a
-  (>>=) : m a -> (a -> m b) -> m b
-
--- HoareState is an instance of the fake monad as well :)
-implementation AssertAtomic s m => HMonad (HWrap s m) where
-  pure = MkHWrap . hreturn
-  (MkHWrap x) >>= y = MkHWrap (x `hbind` (transf . y))
-    where transf : {auto p : Predicate s} -> {auto q : Predicate s} -> HWrap s m b -> HoareState s m p q b
-          transf (MkHWrap (HS st))= HS st
-
--- Annoyingly, idris somehow is convinced that these instances overlap, despite
--- the fact that HWrap is not a member of the `Monad` interface  ...
-%overlapping
-implementation Monad m => HMonad m where
-  pure = tmppure
-  (>>=) = tmpbind
+increment : AssertAtomic Int m => {s : Int} -> HoareState Int m (At (StateEq s)) (Df (At (StateEq (s + 1)))) ()
+increment = HS $
+  \p, s => pure [s + 1, Result (), p]
