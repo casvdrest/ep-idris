@@ -1,86 +1,30 @@
-||| Provides a deep embedding for bash shell scripts
 module Shell
 
-import Environment
 import Free
+import Expr
+import HoareState
+import Control.Monad.State
 
-import Data.HVect
-import Data.Fin
+incr : Functor f => {auto p : Incr :<: f} -> Int -> Free f ()
+incr i = inject (MkIncr i (Pure ()))
 
-import Debug.Error as Debug.Error
+recall : Functor f => {auto p : Recall :<: f} -> Free f Int
+recall = inject (MkRecall Pure)
 
-%access public export
+tick : Functor f => {auto p1 : Recall :<: f} -> {auto p2 : Incr :<: f} -> Free f Int
+tick = do
+  val <- recall
+  incr 1
+  pure val
 
-%language ElabReflection
+run : Run f m => Free f a -> m a
+run = foldTerm pure runAlgebra
 
-||| Embedding of various shell commands
-data Cmd next = Ls    next
-              | Cat   next
-              | Cd    next
-              | Touch next
-              | Stop
+program : Free (Incr :+: Recall) Int
+program = tick
 
-implementation Functor Cmd where
-  map f (Ls    x) = Ls     (f x)
-  map f (Cat   x) = Cat    (f x)
-  map f (Cd    x) = Cd     (f x)
-  map f (Touch x) = Touch  (f x)
-  map f  Stop     = Stop
+runProgramState : Int -> Free (Incr :+: Recall) a -> (a, Int)
+runProgramState init prog = runState (run prog) init
 
-CmdDesc : (Type -> Type) -> Type -> Type
-CmdDesc m a = HVect [m a, m a, m a, m a, m a]
-
-data CmdAlgebra : (Type -> Type ) -> Type -> Type where
-  MkCmdAlgebra : (Monad m) => CmdDesc m a -> CmdAlgebra m a
-
-uwrap : (Monad m) => CmdAlgebra m a -> CmdDesc m a
-uwrap (MkCmdAlgebra hvect) = hvect
-
-CmdF : next -> Type
-CmdF = Free Cmd
-
-UnitF : (Type -> Type) -> Type
-UnitF m = Free m Unit
-
-ls : {auto a : Type} -> CmdF (UnitF m)
-ls = liftF (Ls (Pure ()))
-
-cat : CmdF (UnitF m)
-cat = liftF (Cat (Pure ()))
-
-cd : CmdF (UnitF m)
-cd = liftF (Cd (Pure ()))
-
-touch : CmdF (UnitF m)
-touch = liftF (Touch (Pure ()))
-
-stop : CmdF (UnitF m)
-stop = liftF Stop
-
-interface Error (f : Type -> Type) where
-  throw : f a
-
-implementation Error IO where
-  throw = Debug.Error.error "AN ERROR BRO"
-
-interpret : (Monad m, Error m) => CmdAlgebra m a -> CmdF next -> m a
-interpret alg (Bind (Ls next))    =
-  index FZ (uwrap alg)                >> interpret alg next
-interpret alg (Bind (Cat next))   =
-  index (FS FZ) (uwrap alg)           >> interpret alg next
-interpret alg (Bind (Cd next))    =
-  index (FS (FS FZ)) (uwrap alg)      >> interpret alg next
-interpret alg (Bind (Touch next)) =
-  index (FS (FS (FS FZ))) (uwrap alg) >> interpret alg next
-interpret alg (Bind Stop)         =
-  index (FS (FS (FS (FS FZ)))) (uwrap alg)
-interpret alg (Pure _) = ?rhs
-
-CmdIO : CmdAlgebra IO ()
-CmdIO = MkCmdAlgebra [putStr "ls\n", putStr "cat\n", putStr "cd\n", putStr "touch\n", putStr "stop\n"]
-
-exec : CmdF next -> IO ()
-exec = interpret CmdIO
-
-script : {next : Type} -> CmdF next
-script = ls
+runHoare : AssertAtomic s m => (p : Predicate s) -> (q : Predicate s) -> Free f a -> HoareState s m p q a
+runHoare p q = foldTerm pure runAlgebra

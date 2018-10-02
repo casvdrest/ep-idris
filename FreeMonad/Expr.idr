@@ -49,7 +49,7 @@ data Incr : Type -> Type where
 implementation Functor Recall where
   map f (MkRecall t) = MkRecall (\i => f (t i))
 
-implementation Functor Incr whereInt
+implementation Functor Incr where
   map f (MkIncr t x) = MkIncr t (f x)
 
 implementation MonadState Int m => Run Incr m where
@@ -61,24 +61,3 @@ implementation MonadState Int m => Run Recall m where
 implementation (Run f m, Run g m) => Run (f :+: g) m where
   runAlgebra (Inl r) = runAlgebra r
   runAlgebra (Inr r) = runAlgebra r
-
-incr : Functor f => {auto p : Incr :<: f} -> Int -> Free f ()
-incr i = inject (MkIncr i (Pure ()))
-
-recall : Functor f => {auto p : Recall :<: f} -> Free f Int
-recall = inject (MkRecall Pure)
-
-tick : Functor f => {auto p1 : Recall :<: f} -> {auto p2 : Incr :<: f} -> Free f Int
-tick = do
-  val <- recall
-  incr 1
-  pure val
-
-run : Run f m => Free f a -> m a
-run = foldTerm pure runAlgebra
-
-program : Free (Incr :+: Recall) Int
-program = tick
-
-runProgramState : Int -> Free (Incr :+: Recall) a -> (a, Int)
-runProgramState init prog = runState (run prog) init
