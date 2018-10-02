@@ -12,25 +12,6 @@ infixl 3 :=>:
 
 %access public export
 
-infixr 4 ===>
-
-data (===>) a b =
-    Implies (a -> b)
-
-||| Predicate atoms
-data Atom s = Access Path FMod
-            | Exists Path
-            | HasType Path
-            | StateEq s
-
-||| Equality for predicate atoms
-implementation Eq s => Eq (Atom s) where
-  (Access p m) == (Access p' m') = p == p' && m == m'
-  (Exists p) == (Exists p') = p == p'
-  (HasType p) == (HasType p') = p == p'
-  (StateEq s) == (StateEq s') = s == s'
-  _ == _ = False
-
 infix 1 ><
 
 (><) : (a : Type) -> (a -> Type) -> Type
@@ -69,3 +50,21 @@ hbind (HS f) g = HS $ \(s1 ** pre) =>
       let HS g' = g x in
       case g' (s2 ** ((snd pre) x s2 p)) of
         ((y, s3) ** q) => ((y, s3) ** ((x, s2) ** (p, q)))
+
+hrun : s >< p -> HoareState s a p q -> (a, s)
+hrun i (HS st) =
+  case st i of
+   (x ** _) => x
+
+hget : HoareState s s (\_ => Unit) (\s1, (x, s2) => (x = s1, s2 = s1))
+hget = HS $
+  \(s ** _) =>
+    ((s, s) ** (Refl, Refl))
+
+modify : (f : s -> s) -> HoareState s () (\_ => Unit) (\s1, (_, s2) => (f s1) = s2)
+modify f = HS $
+  \(s ** _) => (((), f s) ** Refl)
+
+hput : (x : s) -> HoareState s () (\_ => Unit) (\_, (_, s2) => s2 = x)
+hput x = HS $
+  \_ => (((), x) ** Refl)
