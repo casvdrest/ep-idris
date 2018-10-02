@@ -127,6 +127,22 @@ check (At a) s = pure (!(assertAtom a s), Top)
 data HoareState : (s : Type) -> (m : Type -> Type) -> Predicate s -> Predicate s -> (a : Type) -> Type where
  HS : (AssertAtomic s m) => (Predicate s -> s -> m (HVect [s, Except a, Predicate s])) -> HoareState s m p q a
 
+--- HoareState (s : Type) (P : Predicate s) (Q : Predicate (a,s))
+---     HS : (i : s) -> P i -> Sigma (a,s) Q
+
+--- exec : (hs : HoareState s a) -> IO (Sigma a (post hs))
+--- exec hs = do
+--     fs <- getFileSystem 
+--     case checkPre hs fs
+--       ok prf -> hs (fs,prf)
+--       _ -> error "precondition fails"
+
+{-
+>>= : HS s a -> (a -> HS s b) -> HS s b
+>>= c f s = 
+  let (x,s') = c s in
+  f x s'
+-}
 ||| Lift a value into the HoareState context
 hreturn : (AssertAtomic s m) => a -> HoareState s m Top (Df Top) a
 hreturn x = HS $
