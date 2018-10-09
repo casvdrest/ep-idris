@@ -58,7 +58,6 @@ asType (Forall {s} p) = (x : s) -> asType (p x)
 asType T          = Unit 
 asType F          = Void
 
-
 syntax "[[..]]" [pred] = HoareState.asType . pred
 syntax "ex." [f] = Exists f
 syntax "fa." [f] = Forall f
@@ -82,7 +81,7 @@ hreturnP y = HSP $
   \(s ** _) =>
     ((y, s) ** (Refl, Refl)
   )
-  
+
 hrunP : (prf : s >< [[..]] p) -> HoareStateP s a p q -> ((a, s) >< [[..]] q (fst prf))
 hrunP prf (HSP st) = st prf
 
@@ -105,8 +104,7 @@ hbindP (HSP st) g = HSP $
         let HSP g' 
           = g x in 
         case g' (s2 ** (r x s2 p)) of 
-          ((y, s3) ** q) => ((y, s3) ** ((x, s2) ** (p, q)))
-  
+          ((y, s3) ** q) => ((y, s3) ** ((x, s2) ** (p, q)))  
 
 ||| Lift a value into the HoareState context
 hreturn : (Eq s, Eq a) => (y : a) -> HoareState s a (\s => Unit) (\i, (x, f) => (x = y, i = f))

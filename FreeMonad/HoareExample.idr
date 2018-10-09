@@ -9,34 +9,18 @@ import Data.So
 
 %access export
 
-data Except a = Result a
-              | E String
-              
-implementation Functor Except where 
-  map f (Result a) = Result (f a)
-  map f (E msg   ) = E msg
-  
-implementation Applicative Except where 
-  pure = Result
-  (Result f) <*> g = map f g
-  (E msg   ) <*> g = E msg
-  
-implementation Monad Except where 
-  (Result x) >>= g = g x
-  (E msg   ) >>= _ = E msg
-  
-implementation (Show a) => Show (Except a) where 
-  show (Result x) = "(Result " ++ show x ++ ")"
-  show (E str   ) = "(Error " ++ str ++ ")"
+Except : Type -> Type 
+Except = Either String
 
 getFS : IO FSTree
 getFS = pure $ FSLeaf (MkFileInfo "file.txt" 
     (MkFileMD F [[True, True, True], [True, True, True], [True, True, True]] (U "cas" "root"))
   )
   
-error : Except a 
-error = E "Error thrown" 
+err : Except a 
+err = Left "Error thrown" 
 
+total
 predToPrf : (p : Predicate) -> Except (asType p)
 predToPrf (x /\ y) = pure (!(predToPrf x), !(predToPrf y))
 predToPrf (x :=> y) = do 
@@ -46,10 +30,25 @@ predToPrf (x :=> y) = do
 predToPrf (x =:= y) = 
   case decEq x y of 
     (Yes prf) => pure prf
-    (No _   ) => error
-predToPrf T = pure ()
-predToPrf F = error
+    (No _   ) => err
+predToPrf T = pure () 
+predToPrf F = err
 
+-- Unfortunately there is no meaningful definition for universal quantificatino
+-- Specifically: what do if the inner predicate fails :(
+-- NB: this definition is not total! (do we care?)
+predToPrf (Forall f) = pure $ (\s => (\(Right x) => x) (predToPrf (f s)))
+
+-- How on earth are we supposed to find x :/ (proof search in Elab()?)
+predToPrf (Exists f) = 
+  let x = 
+    ?val_x in 
+  case predToPrf (f x) of
+    (Right y) => pure (x ** y)
+    (Left  e) => err
+
+-- Temporarily use Int as hardcoded state type, as instantiating polymorphic hoare states
+-- still yields some problems. 
 execP : (x : Int) -> {p : Pre' Int} 
                   -> {q : Post' Int a} 
                   -> HoareStateP Int a p q 
@@ -65,14 +64,14 @@ hgetI : HoareStateP Int Int (\s => T) (\s1, (x, s2) => s1 =:= s2 /\ s2 =:= x)
 hgetI = HSP $ \(s ** _) => ((s, s) ** (Refl, Refl))
 
 hputI : (x : Int) -> HoareStateP Int () (\s => T) (\s1, (_, s2) => s2 =:= x)
-hputI x = HSP $ \(s ** _) => (((), x) ** Refl) 
+hputI x = HSP $ \(s ** _) => (((), x) ** Refl)
 
+-- This will generate a dynamic error, since the precondition of hget10 requires 
+-- the state to be equal to '10'
 prog : Except (Int, Int)
-prog = fst `map` (execP 10 hget10)
+prog = fst `map` (execP 11 hget10)
 
-main : IO () 
-main = do 
+main : IO ()
+main = do
   let x = prog 
   print x
- 
- 
