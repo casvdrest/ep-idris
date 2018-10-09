@@ -113,3 +113,6 @@ canWrite = modAllowed W
 ||| Assert that a user is allowed to execute a file
 canExecute : User -> FileMD -> Bool
 canExecute = modAllowed X
+
+data FSTree = FSNode FileInfo (List FSTree) -- Directories
+            | FSLeaf FileInfo               -- Files
