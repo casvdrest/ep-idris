@@ -60,12 +60,6 @@ hgetI = HSP $ \(s ** _) => ((s, s) ** (Refl, Refl))
 hputI : (x : Int) -> HoareStateP Int () (\s => T) (\s1, (_, s2) => s2 =:= x)
 hputI x = HSP $ \(s ** _) => (((), x) ** Refl)
 
-program : HoareState Int Int p (\_, _ => Unit)
-program = wkn ?f $ 
-  hputI 10 `hbind` (\_ => 
-  hgetI
-  )
-
 -- This will generate a dynamic error, since the precondition of hget10 requires 
 -- the state to be equal to '10'
 prog : Except (Int, Int)
