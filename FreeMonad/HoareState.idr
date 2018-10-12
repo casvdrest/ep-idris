@@ -160,3 +160,70 @@ hput x = HS $
 increment : Num a => (n : a) -> HoareState a () (\_ => Unit) (\s1, (_, s2) => (s1 + n) = s2)
 increment n = HS $ 
   \(s ** _) => (((), s + n) ** Refl)
+ 
+str : {a : Type} -> {s : Type}
+                 -> {q : Post s a}
+                 -> {p1 : Pre s} -> {p2 : Pre s}
+                 -> ((i : s) -> p2 i -> p1 i)
+                 -> HoareState s a p1 q
+                 -> HoareState s a p2 q 
+str f (HS st) = HS $ 
+  \(i ** p) => st (i ** (f i p))
+  
+wkn : {a : Type} -> {s : Type} 
+                 -> {p : Pre s}
+                 -> {q1 : Post s a} -> {q2 : Post s a}
+                 -> ((s1 : s) -> (x : a) -> (s2 : s) -> p s1 -> q1 s1 (x, s2) -> q2 s1 (x, s2))
+                 -> HoareState s a p q1
+                 -> HoareState s a p q2 
+wkn g (HS st) = HS $ 
+  \(s1 ** p) => 
+    case st (s1 ** p) of 
+      ((x, s2) ** q) => ((x, s2) ** g s1 x s2 p q)
+
+rewr : {a : Type} -> {s : Type} 
+                  -> {p1 : Pre s} -> {q1 : Post s a} 
+                  -> {p2 : Pre s} -> {q2 : Post s a} 
+                  -> ((i : s) -> p2 i -> p1 i) 
+                  -> ((i : s) -> (x : a) -> (f : s) -> p2 i -> q1 i (x, f) -> q2 i (x, f))
+                  -> HoareState s a p1 q1 
+                  -> HoareState s a p2 q2 
+rewr f g = wkn g . str f 
+
+strP : {a : Type} -> {s : Type} 
+                  -> {q : Post' s a}
+                  -> {p1 : Pre' s} -> {p2 : Pre' s}
+                  -> ((i : s) -> ([[..]] p2) i -> ([[..]] p1) i)
+                  -> HoareStateP s a p1 q 
+                  -> HoareStateP s a p2 q
+strP f (HSP st) = HSP $ 
+  \(i ** p) => 
+    st (i ** (f i p))
+    
+wknP : {a : Type} -> {s : Type} 
+                  -> {p : Pre' s}
+                  -> {q1 : Post' s a} -> {q2 : Post' s a}
+                  -> ((s1 : s) -> (x : a) 
+                               -> (s2 : s) 
+                               -> ([[..]] p) s1 
+                               -> ([[..]] (q1 s1)) (x, s2) 
+                               -> ([[..]] (q2 s1)) (x, s2))
+                  -> HoareStateP s a p q1
+                  -> HoareStateP s a p q2 
+wknP g (HSP st) = HSP $ 
+  \(s1 ** p) => 
+    case st (s1 ** p) of 
+      ((x, s2) ** q) => ((x, s2) ** g s1 x s2 p q)
+    
+rewrP : {a : Type} -> {s : Type} 
+                   -> {p1 : Pre' s} -> {q1 : Post' s a} 
+                   -> {p2 : Pre' s} -> {q2 : Post' s a} 
+                   -> ((i : s) -> ([[..]] p2) i 
+                               -> ([[..]] p1) i) 
+                   -> ((i : s) -> (x : a) -> (f : s) 
+                               -> ([[..]] p2) i 
+                               -> ([[..]] (q1 i)) (x, f) 
+                               -> ([[..]] (q2 i)) (x, f))
+                   -> HoareStateP s a p1 q1 
+                   -> HoareStateP s a p2 q2 
+rewrP f g = wknP g . strP f 

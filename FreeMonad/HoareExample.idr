@@ -20,7 +20,6 @@ getFS = pure $ FSLeaf (MkFileInfo "file.txt"
 err : Except a 
 err = Left "Error thrown" 
 
-total
 predToPrf : (p : Predicate) -> Except (asType p)
 predToPrf (x /\ y) = pure (!(predToPrf x), !(predToPrf y))
 predToPrf (x :=> y) = do 
@@ -33,13 +32,8 @@ predToPrf (x =:= y) =
     (No _   ) => err
 predToPrf T = pure () 
 predToPrf F = err
-
--- Unfortunately there is no meaningful definition for universal quantificatino
--- Specifically: what do if the inner predicate fails :(
--- NB: this definition is not total! (do we care?)
+-- No total definition exists for this case (a -> m b -> m (a -> b) cannot be defined)
 predToPrf (Forall f) = pure $ (\s => (\(Right x) => x) (predToPrf (f s)))
-
--- How on earth are we supposed to find x :/ (proof search in Elab()?)
 predToPrf (Exists f) = 
   let x = 
     ?val_x in 
@@ -65,6 +59,12 @@ hgetI = HSP $ \(s ** _) => ((s, s) ** (Refl, Refl))
 
 hputI : (x : Int) -> HoareStateP Int () (\s => T) (\s1, (_, s2) => s2 =:= x)
 hputI x = HSP $ \(s ** _) => (((), x) ** Refl)
+
+program : HoareState Int Int p (\_, _ => Unit)
+program = wkn ?f $ 
+  hputI 10 `hbind` (\_ => 
+  hgetI
+  )
 
 -- This will generate a dynamic error, since the precondition of hget10 requires 
 -- the state to be equal to '10'
