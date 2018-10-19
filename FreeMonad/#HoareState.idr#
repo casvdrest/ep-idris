@@ -57,16 +57,14 @@ asType T          = Unit
 asType F          = Void
 
 syntax "[[..]]" [pred] = HoareState.asType . pred
+syntax "ex." [f] = Exists f
+syntax "exT." [ty] [f] = Exists {s = ty} f
 syntax "fa." [f] = Forall f
 syntax "faT." [ty] [f] = Forall {s = ty} f
 
 ||| State monad with pre- and post condition
 data HoareState : (s : Type) -> (a : Type) -> Pre s -> Post s a -> Type where
-	HS  : ((prf : (s >< p)) -> (a, s) >< q (fst prf)) -> HoareState s a p q 
-	
-||| State monad with pre- and post condition
-data HoareStateP : (s : Type) -> (a : Type) -> Pre' s -> Post' s a -> Type where
-  HSP  : ((prf : (s >< [[..]] p)) -> (a, s) >< [[..]] q) -> HoareStateP s a p q 
+  HS  : ((prf : (s >< p)) -> (a, s) >< q (fst prf)) -> HoareState s a p q 
           
 hbindI : {a : Type} -> {b : Type}
                     -> {auto p1 : Pre' Int} -> {auto q1 : Post' Int a}
@@ -118,9 +116,6 @@ hbind (HS f) g = HS $ \(s1 ** pre) =>
 hrun : (prf : s >< p) -> HoareState s a p q -> ((a, s) >< (q (fst prf)))
 hrun i (HS st) = st i
 
-hrunP : (prf : s >< [[..]] p) -> HoareStateP s a p q -> ((a, s) >< [[..]] q)
-hrunP i (HSP st) = st i
-
 ||| Retrieve the current state value in a HoareState
 hget : {s : Type} -> HoareState s s (\_ => Unit) (\s1, (a, s2) => (s1 = s2, s2 = a))
 hget = HS $
@@ -170,39 +165,78 @@ rwr : {a : Type} -> {s : Type}
                  -> HoareState s a p1 q1 
                  -> HoareState s a p2 q2 
 rwr f g = wkn g . str f 
- 
-strFS : {a : Type} -> {q : Post' FSTree a}
-									-> {p1 : Pre' FSTree} -> {p2 : Pre' FSTree}
-									-> ((i : FSTree) -> ([[..]] p2) i
-																-> ([[..]] p1) i)
-									-> HoareStateP FSTree a p1 q 
-									-> HoareStateP FSTree a p2 q
-strFS f (HSP st) = HSP $ 
-	\(i ** p) => 
-		st (i ** (f i p))
+{-
+strP : {a : Type} -> {s : Type} 
+                  -> {q : Post' s a}
+                  -> {p1 : Pre' s} -> {p2 : Pre' s}
+                  -> ((i : s) -> ([[..]] p2) i -> ([[..]] p1) i)
+                  -> HoareStateP s a p1 q 
+                  -> HoareStateP s a p2 q
+strP f (HSP st) = HSP $ 
+  \(i ** p) => 
+    st (i ** (f i p))
+    
+wknP : {a : Type} -> {s : Type} 
+                  -> {p : Pre' s}
+                  -> {q1 : Post' s a} -> {q2 : Post' s a}
+                  -> ((s1 : s) -> (x : a) 
+                               -> (s2 : s) 
+                               -> ([[..]] p) s1 
+                               -> ([[..]] (q1 s1)) (x, s2) 
+                               -> ([[..]] (q2 s1)) (x, s2))
+                  -> HoareStateP s a p q1
+                  -> HoareStateP s a p q2 
+wknP g (HSP st) = HSP $ 
+  \(s1 ** p) => 
+    case st (s1 ** p) of 
+      ((x, s2) ** q) => ((x, s2) ** g s1 x s2 p q)
+    
+rwrP : {a : Type} -> {s : Type} 
+                  -> {p1 : Pre' s} -> {q1 : Post' s a} 
+                  -> {p2 : Pre' s} -> {q2 : Post' s a} 
+                  -> ((i : s) -> ([[..]] p2) i 
+                              -> ([[..]] p1) i) 
+                  -> ((i : s) -> (x : a) -> (f : s) 
+                              -> ([[..]] p2) i 
+                              -> ([[..]] (q1 i)) (x, f) 
+                              -> ([[..]] (q2 i)) (x, f))
+                  -> HoareStateP s a p1 q1 
+                  -> HoareStateP s a p2 q2 
+rwrP f g = wknP g . strP f 
 
-wknFS : {a : Type} -> {p : Pre' FSTree} 
-									-> {q1 : Post' FSTree a} -> {q2 : Post' FSTree a}
-									-> ((i : FSTree) -> (x : a) -> (f : FSTree)
-																-> ([[..]] p) i 
-																-> ([[..]] q1) (x, f)
-																-> ([[..]] q2) (x, f))
-									-> HoareStateP FSTree a p q1
-									-> HoareStateP FSTree a p q2 
-wknFS g (HSP st) = HSP $ 
-	\(s1 ** p) => 
-		case st (s1 ** p) of 
-			((x, s2) ** q) => ((x, s2) ** g s1 x s2 p q)
+strI : {a : Type} -> {q : Post' Int a}
+                  -> {p1 : Pre' Int} -> {p2 : Pre' Int}
+                  -> ((i : Int) -> ([[..]] p2) i
+                                -> ([[..]] p1) i)
+                  -> HoareStateP Int a p1 q 
+                  -> HoareStateP Int a p2 q
+strI f (HSP st) = HSP $ 
+  \(i ** p) => 
+    st (i ** (f i p))
+    
+wknI : {a : Type} -> {p : Pre' Int} 
+                  -> {q1 : Post' Int a} -> {q2 : Post' Int a}
+                  -> ((i : Int) -> (x : a) -> (f : Int)
+                                -> ([[..]] p) i 
+                                -> ([[..]] (q1 i)) (x, f)
+                                -> ([[..]] (q2 i)) (x, f))
+                  -> HoareStateP Int a p q1
+                  -> HoareStateP Int a p q2 
+wknI g (HSP st) = HSP $ 
+  \(s1 ** p) => 
+    case st (s1 ** p) of 
+      ((x, s2) ** q) => ((x, s2) ** g s1 x s2 p q)
 
-rwrFS : {a : Type} -> {Int : Type} 
-									-> {p1 : Pre' FSTree} -> {q1 : Post' FSTree a} 
-									-> {p2 : Pre' FSTree} -> {q2 : Post' FSTree a} 
-									-> ((i : FSTree) -> ([[..]] p2) i 
-															  -> ([[..]] p1) i) 
-									-> ((i : FSTree) -> (x : a) -> (f : FSTree) 
-															-> ([[..]] p2) i 
-															-> ([[..]] q1) (x, f) 
-															-> ([[..]] q2) (x, f))
-									-> HoareStateP FSTree a p1 q1 
-									-> HoareStateP FSTree a p2 q2
-rwrFS f g = wknFS g . strFS f   
+rwrI : {a : Type} -> {Int : Type} 
+                  -> {p1 : Pre' Int} -> {q1 : Post' Int a} 
+                  -> {p2 : Pre' Int} -> {q2 : Post' Int a} 
+                  -> ((i : Int) -> ([[..]] p2) i 
+                              -> ([[..]] p1) i) 
+                  -> ((i : Int) -> (x : a) -> (f : Int) 
+                              -> ([[..]] p2) i 
+                              -> ([[..]] (q1 i)) (x, f) 
+                              -> ([[..]] (q2 i)) (x, f))
+                  -> HoareStateP Int a p1 q1 
+                  -> HoareStateP Int a p2 q2
+rwrI f g = wknI g . strI f                         
+ -}

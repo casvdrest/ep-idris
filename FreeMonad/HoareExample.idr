@@ -34,38 +34,20 @@ predToPrf T = pure ()
 predToPrf F = err
 -- No total definition exists for this case (a -> m b -> m (a -> b) cannot be defined)
 predToPrf (Forall f) = pure $ (\s => (\(Right x) => x) (predToPrf (f s)))
-predToPrf (Exists f) = 
-  let x = 
-    ?val_x in 
-  case predToPrf (f x) of
-    (Right y) => pure (x ** y)
-    (Left  e) => err
 
--- Temporarily use Int as hardcoded state type, as instantiating polymorphic hoare states
--- still yields some problems. 
-execP : (x : Int) -> {p : Pre' Int} 
-                  -> {q : Post' Int a} 
-                  -> HoareStateP Int a p q 
-                  -> Except ((a, Int) >< [[..]] q x)
-execP init {p} {q} st = do
-  prf <- predToPrf (p init) 
-  pure (hrunP (init ** prf) st)
+hgetFS : HoareStateP FSTree FSTree (\s => T) (\(x, s2) => s2 =:= x)
+hgetFS = HSP $ \(s ** _) => ((s, s) ** Refl)
 
-hget10 : HoareStateP Int Int (\s => s =:= 10) (\s1, (x, s2) => s1 =:= s2 /\ s2 =:= x)
-hget10 = HSP $ \(s ** _) => ((s, s) ** (Refl, Refl))
+hputFS : (x : FSTree) -> HoareStateP FSTree () (\s => T) (\(_, s2) => s2 =:= x)
+hputFS x = HSP $ \(s ** _) => (((), x) ** Refl)
 
-hgetI : HoareStateP Int Int (\s => T) (\s1, (x, s2) => s1 =:= s2 /\ s2 =:= x)
-hgetI = HSP $ \(s ** _) => ((s, s) ** (Refl, Refl))
+Data Pred : Type -> Type where 
+	
 
-hputI : (x : Int) -> HoareStateP Int () (\s => T) (\s1, (_, s2) => s2 =:= x)
-hputI x = HSP $ \(s ** _) => (((), x) ** Refl)
+data Cmd = 
+	Ls   FilePath ([FilePath] -> Cmd)
+	Echo String (String -> Cmd)
+	Cat  FilePath (String -> Cmd)
 
--- This will generate a dynamic error, since the precondition of hget10 requires 
--- the state to be equal to '10'
-prog : Except (Int, Int)
-prog = fst `map` (execP 11 hget10)
-
-main : IO ()
-main = do
-  let x = prog 
-  print x
+pre : Cmd -> Predicate a 
+pre (LS path)
