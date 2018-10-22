@@ -6,7 +6,7 @@ import Data.So
 import Data.List
 
 ||| intToBool (prim__eqString a a) != True according to idris, so 
-||| until further notice we use this hack
+||| this hack shall saviour us until further notice
 total provePrimStrEq : {a : String} -> {b : String} -> a = b -> So (a == b)
 provePrimStrEq Refl = believe_me Oh
 

@@ -1,6 +1,0 @@
-module Parsers
-
-import Lightyear.Core
-import Lightyear.Combinators
-import Lightyear.Char
-import Lightyear.String
