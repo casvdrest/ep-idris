@@ -1,43 +1,75 @@
 module Eval 
 
 import Environment
-import Free
 import Syntax 
 import CmdIO
 
-implementation Functor Cmd where 
-  map f (Ls x g) = assert_total $ Ls x (f g)
-  map f (Cat x g) = assert_total $ Cat x (f g)
-  map f (Echo x g) = assert_total $ Echo x (f g)
-  map f (Return x) = Return (f x)
+import Data.Vect
+import Data.List
+import Data.So
+
+import AtomicProofs
+
+ret : a -> CmdF a 
+ret x = liftF (Return)
+
+ls : Path -> CmdF (List Path)
+ls path = liftF (Ls path id)
+
+cat : Path -> CmdF String
+cat path = liftF (Cat path id)
+
+echo : String -> CmdF String
+echo str = liftF (Echo str id)
+
+echo1 : CmdF ()
+echo1 = do 
+  echo "Foo" >>= echo
+  pure ()
+ 
+I : Bool 
+I = True 
+
+O : Bool 
+O = False
+
+interface Throwable (m : Type -> Type) where 
+  throw : String -> m ()
   
-CmdF : Type -> Type
-CmdF = Free Cmd
+implementation Throwable IO where
+  throw = putStrLn
 
-ret : a -> Free Cmd a 
-ret x = liftF (Return x)
+||| get file structure  
+getFS : CmdExec m => m FSTree  
+getFS = pure (FSLeaf (MkFileInfo "file1.txt" (MkFileMD F_ [[I,I,I], [I,I,I], [O,O,O]] (U "cas" "user"))))
 
-stop : a -> Cmd ()
-stop = const $ Return ()
+run : (CmdExec m, Throwable m) => 
+      (script : CmdF r) -> ((fs : FSTree) 
+                        -> Maybe ([[..]] (pre script))) -> m () 
+run script check = do 
+  fs <- getFS
+  case check fs of 
+    Nothing => throw "Precondition check failed ..."
+    (Just x) => cmdExec script
 
-ls : Path -> Free Cmd ()
-ls path = liftF (Ls path stop)
+proveEcho1 : (fs : FSTree) -> Maybe ([[. FSTree .]] (
+                                Forall String (\_ => 
+                                  Forall String (\_ => T)
+                                ))
+                              )
+proveEcho1 _ = Just $ (const (const ()))
 
-cat : Path -> Free Cmd ()
-cat path = liftF (Cat path stop)
+total
+proveCat1 : (fs : FSTree) -> Maybe ([[. FSTree .]] 
+  ((Atom $ pathExists (FilePath [] "file1.txt")) /\ (Forall String (const T))))
+proveCat1 fs with (provePathExists fs (FilePath [] "file1.txt"))
+  proveCat1 fs | Nothing = Nothing
+  proveCat1 fs | (Just x) = Just (x, const ())
 
-echo : String -> Free Cmd () 
-echo str = liftF (Echo str stop)
+cat1 : CmdF ()
+cat1 = do
+  cat (FilePath [] "file1.txt")
+  pure ()
 
-script : CmdF ()
-script = do 
-  echo "hallo"
-  echo "wie is daar" 
- 
-eval : (Show a) => CmdF a -> IO ()
-eval (Bind (Ls x c)) = do
-  r <- implIO (Ls x c)
-  eval r
-  
- 
- 
+main : IO ()
+main = run (cat1) proveCat1

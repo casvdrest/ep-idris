@@ -5,27 +5,16 @@ import System
 import Syntax
 import Free
 import GCurry
+import Parsers
 
 import Data.HVect
 
---import Text.Parser
-
 %access public export
 
-record ExecInfo r where 
-  constructor MkCmdInfo 
-  argc : Nat 
-  inTypes : Vect argc Type 
-  outType : Maybe Type 
-  parse : String -> fromMaybe Unit outType
-  exec : HVect inTypes -> IO String
-  params : HVect inTypes 
-  fn : Maybe (fromMaybe Void outType -> r) 
-  
+fromRight : b -> Either a b -> b
+fromRight def (Left l) = def
+fromRight def (Right r) = r
 
-interface IOExec (t : Type -> Type) (r : Type) where 
-  execInfo : ExecInfo r
-  
 readFileH : (fileHandle : File) -> IO String
 readFileH h = loop ""
   where
@@ -41,60 +30,63 @@ execAndReadOutput cmd = do
   contents <- readFileH fh
   pclose fh
   pure contents
+  
+interface IOExec (f : Type -> Type) where 
+  argc : f a -> Nat
+  inTypes : (inh : f a) -> Vect (argc inh) Type 
+  outType : f a -> Maybe Type 
+  getParse : (inh : f a) -> String -> Either String (fromMaybe Unit (outType inh))
+  exec : (inh : f a) -> HVect (inTypes inh) -> IO String
+  getParams : (inh : f a) -> HVect (inTypes inh)
+  getF : (inh : f a) -> Either String (fromMaybe Unit (outType inh) -> a)
+               
+implementation IOExec Cmd where 
+  argc (Ls x f) = 1
+  argc (Cat x f) = 1
+  argc (Echo x f) = 1
+  argc (Return) = 0
 
-argc : Cmd r -> Nat
-argc (Ls x f) = 1
-argc (Cat x f) = 1
-argc (Echo x f) = 1
-argc (Return) = 0
+  inTypes (Ls x f) = [Path]
+  inTypes (Cat x f) = [Path]
+  inTypes (Echo x f) = [String]
+  inTypes (Return) = []
 
-inTypes : (cmd : Cmd r) -> Vect (argc cmd) Type
-inTypes (Ls x f) = [Path]
-inTypes (Cat x f) = [Path]
-inTypes (Echo x f) = [String]
-inTypes (Return) = []
+  outType (Ls x f) = Just (List Path)
+  outType (Cat x f) = Just String
+  outType (Echo x f) = Just String
+  outType (Return) = Nothing
 
-outType : (cmd : Cmd r) -> Maybe Type 
-outType (Ls x f) = Just (List Path)
-outType (Cat x f) = Just String
-outType (Echo x f) = Just String
-outType (Return) = Nothing
+  getParse (Ls x f) str = parsePathList str
+  getParse (Cat x f) str = Right str
+  getParse (Echo x f) str = Right str
+  getParse (Return) str = Right ()
 
-getParse : (cmd : Cmd r) -> String -> fromMaybe Unit (outType cmd)
-getParse (Ls x f) str = ?gp_1
-getParse (Cat x f) str = ?gp_2
-getParse (Echo x f) str = ?gp_3
-getParse (Return) str = ()
+  exec (Ls x f) _ = execAndReadOutput ("ls " ++ show x)
+  exec (Cat x f) _ =  execAndReadOutput ("cat " ++ show x)
+  exec (Echo x f) _ =  execAndReadOutput ("echo " ++ show x)
+  exec Return _ =  pure ""
 
-exec : (cmd : Cmd r) -> HVect (inTypes cmd) -> IO String
-exec (Ls x f) _ = execAndReadOutput ("ls " ++ show x)
-exec (Cat x f) _ =  execAndReadOutput ("cat " ++ show x)
-exec (Echo x f) _ =  execAndReadOutput ("echo " ++ show x)
-exec Return _ =  pure ""
+  getParams (Ls x f) = [x]
+  getParams (Cat x f) = [x]
+  getParams (Echo x f) = [x]
+  getParams (Return) = []
 
-getParams : (cmd : Cmd r) -> HVect (inTypes cmd)
-getParams (Ls x f) = [x]
-getParams (Cat x f) = [x]
-getParams (Echo x f) = [x]
-getParams (Return) = []
-
-getF : (cmd : Cmd r) -> Maybe (fromMaybe Unit (outType cmd) -> r)
-getF (Ls x f) = Just f
-getF (Cat x f) = Just f
-getF (Echo x f) = Just f
-getF Return = Nothing
-
-implIO : Free Cmd r -> IO ()
+  getF (Ls x f) = Right f
+  getF (Cat x f) = Right f
+  getF (Echo x f) = Right f
+  getF Return = Left "No continuation for Return"
+  
+implIO : CmdF a  -> IO ()
 implIO (Pure x) = pure ()
-implIO (Bind cmd) = do 
+implIO (Bind cmd) = do
   output_raw <- exec cmd (getParams cmd)
-  fromMaybe (pure ()) 
+  print output_raw
+  fromRight (pure ())
     ( do f <- getF cmd
-         let p = getParse cmd output_raw
+         p <- getParse cmd output_raw
          pure $ (implIO (f p))
     )
- 
- 
- 
- 
- 
+    
+implementation CmdExec IO where 
+  cmdExec = implIO
+

@@ -14,6 +14,9 @@ Group = Name
 ||| A linux user
 data User : Type where
   U : Name -> Group -> User
+  
+implementation Eq User where
+  (U x y) == (U z w) = z == x && y == w
 
 ||| A single permission entry. Contains 3 bits, respectively indicating
 ||| read, write and execute (rwx) permission.
@@ -29,13 +32,13 @@ FPermission = Vect 3 Permission
 
 ||| Different types of files that may live in a Linux file system. Currently,
 ||| symlinks are not included
-data FType = F
-           | D
+data FType = F_
+           | D_
 
 ||| Define equality for file types
 implementation Eq FType where
-  F == F = True
-  D == D = True
+  F_ == F_ = True
+  D_ == D_ = True
   _ == _ = False
 
 ||| Describes three possible operations on files. Depending on wether
@@ -58,10 +61,16 @@ implementation Eq FMod where
 ||| * Owner (user object)
 data FileMD : Type where
   MkFileMD : (t : FType) -> (p : FPermission) -> (u : User) -> FileMD
+  
+implementation Eq FileMD where 
+  (MkFileMD t p u) == (MkFileMD x xs y) = t == x && p == xs && u == y
 
 ||| Contains all relevant info about files -- e.g. it's name, and metadata
 data FileInfo : Type where
   MkFileInfo : (name : Name) -> (md : FileMD) -> FileInfo
+  
+implementation Eq FileInfo where 
+  (MkFileInfo name md) == (MkFileInfo x y) = name == x && md == y
 
 ||| Models a path through the file system tree
 data Path : Type where
@@ -117,5 +126,15 @@ canExecute = modAllowed X
 data FSTree = FSNode FileInfo (List FSTree) -- Directories
             | FSLeaf FileInfo               -- Files
             
-implementation Show Path where
-  show p = "wollah"
+implementation Eq FSTree where 
+  (FSNode x xs) == (FSNode y ys) = assert_total $ x == y && xs == ys
+  (FSLeaf x) == (FSLeaf y) = x == y
+  _ == _ = False
+  
+implementation Show Path where 
+  show x = "path"
+  
+implementation DecEq FSTree where 
+  decEq a b with (a == b) 
+    decEq a b | True = Yes (really_believe_me "temporary hack")
+    decEq a b | False = No (really_believe_me "temporary hack")
