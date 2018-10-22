@@ -283,8 +283,18 @@ implementation Eq FSTree where
   (FSLeaf x) == (FSLeaf y) = x == y
   _ == _ = False
   
+dirStr : List String -> String
+dirStr [] = ""
+dirStr (x :: xs) = x ++ "/" ++ dirStr xs  
+  
 implementation Show Path where 
-  show x = "path"
+  show (FilePath xs x) = 
+    let str = 
+      dirStr xs in 
+    case str of 
+      "" => x
+      _  => str ++ "/" ++ x
+  show (DirPath xs) = dirStr xs
   
 nodeNotLeaf : FSNode x xs = FSLeaf y -> Void 
 nodeNotLeaf Refl impossible

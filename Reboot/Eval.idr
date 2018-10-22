@@ -1,4 +1,4 @@
-module Eval 
+module Main
 
 import Environment
 import Syntax 
