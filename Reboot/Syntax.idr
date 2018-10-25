@@ -5,13 +5,13 @@ import Environment
 import Free
 
 import Data.So
+import Data.Vect
+import Data.List
 import Control.ST
 
 infixl 5 /\
 infixl 4 :=>
 infix  6 =:=
-
-infixl 7 <#>
 
 %access public export
 
@@ -21,7 +21,7 @@ data Predicate : Type -> Type where
   (=:=) : (DecEq a) => a -> a -> Predicate s
   Forall : (a : Type) -> (a -> Predicate s) -> Predicate s
   --Exists : (a : Type) -> (a -> Predicate s) -> Predicate s
-  Atom : (s -> Bool) -> Predicate s
+  Atom : (s -> Type) -> Predicate s
   T : Predicate s
   F : Predicate s
   
@@ -43,7 +43,7 @@ asType (p :=> q)  = asType p -> asType q
 asType (a =:= b)  = (a = b)
 asType (Forall ty p) = ((x : ty) -> asType (p x))
 --asType (Exists ty p) = (\s => (ty >< (\x => asType (p x) s)))
-asType (Atom f)   = s >< So . f
+asType (Atom f)   = s >< f
 asType T          = Unit 
 asType F          = Void
 
@@ -54,32 +54,19 @@ data Cmd next = Ls Path (List Path -> next)
               | Cat Path (String -> next)
               | Echo String (String -> next)
               | Return
-              
+    
 implementation Functor Cmd where 
   map f (Ls x g) = assert_total $ Ls x (\v => f (g v))
   map f (Cat x g) = assert_total $ Cat x (\v => f (g v))
   map f (Echo x g) = assert_total $ Echo x (\v => f (g v))
-  map f Return = Return
+  map f Return = Return 
   
-total
-any' : (a -> Bool) -> List a -> Bool 
-any' p [] = False
-any' p (x :: xs) = p x || any' p xs
- 
-||| Create a predicate that asserts whether the input path is valid in 
-||| the filesystem.
-total
-pathExists : Path -> FSTree -> Bool 
-pathExists (FilePath [] y) (FSNode x xs) = False
-pathExists (FilePath (z :: ys) y) (FSNode (MkFileInfo name md) xs) = assert_total $
-  name == z && any' (pathExists (FilePath ys y)) xs
-pathExists (DirPath []) (FSNode x xs) = True
-pathExists (DirPath (y :: ys)) (FSNode (MkFileInfo name md) xs) = assert_total $ 
-  name == y && any' (pathExists (DirPath ys)) xs
-pathExists (FilePath [] y) (FSLeaf (MkFileInfo name md)) = y == name
-pathExists (FilePath (z :: xs) y) (FSLeaf x) = False
-pathExists (DirPath []) (FSLeaf x) = True
-pathExists (DirPath (y :: xs)) (FSLeaf x) = False
+pathExists : (p : Path) -> (fs : FSTree) -> Type
+pathExists p fs = FSElem p fs
+
+typeIs : FType -> FSElem p fs -> Type
+
+hasType : (p : Path) -> (t : FType) -> (fs : FSTree) -> FSElem p fs >< typeIs t
   
 data CmdF : Type -> Type where
   Bind : Cmd (CmdF a) -> CmdF a
@@ -128,3 +115,4 @@ pre (Pure _) = T
 
 interface Monad m  => CmdExec (m : Type -> Type) where 
   cmdExec : CmdF a -> m ()
+

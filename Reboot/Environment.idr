@@ -1,6 +1,7 @@
 module Environment
 
 import Data.Vect
+import Data.List
 
 %access public export
 
@@ -337,3 +338,131 @@ implementation DecEq FSTree where
     case decEq x y of 
       (Yes prf) => Yes (leafEq prf)
       (No contra) => No (leafNameNotEq contra)
+
+data FSElem : Path -> FSTree -> Type where 
+  HereDir  : FSElem (DirPath []) 
+                    (FSNode x xs)
+  HereFile : (n1 = n2) -> FSElem (FilePath [] n1) 
+                                 (FSLeaf (MkFileInfo n2 md)) 
+  ThereDir : (fs : FSTree) -> FSElem (DirPath xs) fs 
+                           -> Elem fs ys -> (n : String) 
+                           -> FSElem (DirPath (n :: xs)) 
+                                     (FSNode (MkFileInfo n md) ys)
+  ThereFile : (fs : FSTree) -> FSElem (FilePath xs x) fs 
+                            -> Elem fs ys -> (n : String)
+                            -> FSElem (FilePath (n :: xs) x) 
+                                      (FSNode (MkFileInfo n md) ys)
+
+castFS : fs1 = fs2 -> FSElem p fs1 -> FSElem p fs2
+castFS Refl x = x
+
+castFS' : fs1 = fs2 -> Data.List.Elem fs1 xs -> Data.List.Elem fs2 xs
+castFS' Refl x = x
+
+TdFsEq : ThereDir fs1 x1 y1 prf1 
+         = ThereDir fs2 x2 y2 prf2 -> fs1 = fs2
+TdFsEq Refl = Refl
+
+TfFsEq : ThereFile fs1 x1 y1 prf1
+         = ThereFile fs2 x2 y2 prf2 -> fs1 = fs2
+TfFsEq Refl = Refl
+
+TdFsNotEqual : (fs1 = fs2 -> Void) -> 
+                 ThereDir fs1 x1 y1 prf1 
+                 = ThereDir fs2 x2 y2 prf2 -> Void
+TdFsNotEqual contra = contra . TdFsEq
+
+TfFsNotEqual : (fs1 = fs2 -> Void) -> 
+               ThereFile fs1 x1 y1 prf1
+               = ThereFile fs2 x2 y2 prf2 -> Void
+TfFsNotEqual contra = contra . TfFsEq
+
+TdRecEq : ThereDir fs1 x1 y1 prf1 
+          = ThereDir fs1 x2 y2 prf2 -> x1 = x2
+TdRecEq Refl = Refl 
+
+TfRecEq : ThereFile fs1 x1 y1 prf1
+          = ThereFile fs1 x2 y2 prf2 -> x1 = x2
+TfRecEq Refl = Refl
+
+TdElemEq : ThereDir fs1 x1 y1 prf1 
+           = ThereDir fs1 x2 y2 prf -> y1 = y2
+TdElemEq Refl = Refl
+
+TfElemEq : ThereFile fs1 x1 y1 prf1
+           = ThereFile fs1 x2 y2 prf -> y1 = y2
+TfElemEq Refl = Refl
+
+TdRecNotEqual : (fsprf : fs1 = fs2) -> (castFS fsprf x1 = x2 -> Void) 
+                                    -> ThereDir fs1 x1 y1 prf1 
+                                       = ThereDir fs2 x2 y2 prf2 -> Void
+TdRecNotEqual Refl contra = contra . TdRecEq
+
+TfRecNotEqual : (fsprf : fs1 = fs2) -> (castFS fsprf x1 = x2 -> Void)
+                                    -> ThereFile fs1 x1 y1 prf1
+                                       = ThereFile fs2 x2 y2 prf2 -> Void
+TfRecNotEqual Refl contra = contra . TfRecEq
+
+TdElemNotEqual : (fsprf : fs1 = fs2) -> ((castFS' fsprf y1) = y2 -> Void) 
+                                     -> ThereDir fs1 x1 y1 prf1 
+                                        = ThereDir fs2 x2 y2 prf2 -> Void
+TdElemNotEqual Refl contra = contra . TdElemEq
+
+TfElemNotEqual : (fsprf : fs1 = fs2) -> ((castFS' fsprf y1) = y2 -> Void)
+                                     -> ThereFile fs1 x1 y1 prf1
+                                        = ThereFile fs2 x2 y2 prf2 -> Void
+TfElemNotEqual Refl contra = contra . TfElemEq
+
+TdEq :(p1 : fs1 = fs2) -> (p2 : castFS p1 x1 = x2) 
+                       -> (p3 : castFS' p1 y1 = y2) 
+                       -> (p4 : n1 = n2) 
+                       -> ThereDir {md=md} fs1 x1 y1 n1 
+                          = ThereDir {md=md} fs2 x2 y2 n2
+TdEq Refl Refl Refl Refl = Refl
+
+TfEq : (p1 : fs1 = fs2) -> (p2 : castFS p1 x1 = x2)
+                        -> (p3 : castFS' p1 y1 = y2)
+                        -> (p4 : n1 = n2)
+                        -> ThereFile {md=md} fs1 x1 y1 n1
+                           = ThereFile {md=md} fs2 x2 y2 n2
+TfEq Refl Refl Refl Refl = Refl
+                              
+implementation DecEq (FSElem p fs) where 
+  decEq HereDir HereDir = Yes Refl
+  decEq (HereFile Refl) 
+        (HereFile Refl) = 
+    Yes Refl
+  decEq (ThereDir fs1 x y _) 
+        (ThereDir fs2 z w _) = 
+    case decEq fs1 fs2 of 
+      (Yes prf1) => 
+        case decEq 
+          (castFS prf1 x) z of 
+          (Yes prf2) => 
+            case decEq 
+              (castFS' prf1 y) w of 
+              (Yes prf3) => 
+                Yes (TdEq prf1 prf2 prf3 Refl)
+              (No contra) => 
+                No (TdElemNotEqual prf1 contra)
+          (No contra) => 
+            No (TdRecNotEqual prf1 contra)
+      (No contra) => 
+        No (TdFsNotEqual contra)
+  decEq (ThereFile fs1 y z _) 
+        (ThereFile fs2 x w _) = 
+    case decEq fs1 fs2 of
+      (Yes prf1) => 
+        case decEq
+          (castFS prf1 y) x of
+          (Yes prf2) => 
+            case decEq
+              (castFS' prf1 z) w of
+              (Yes prf3) => 
+                Yes (TfEq prf1 prf2 prf3 Refl)
+              (No contra) => 
+                No (TfElemNotEqual prf1 contra)
+          (No contra) => 
+            No (TfRecNotEqual prf1 contra)
+      (No contra) => 
+        No (TfFsNotEqual contra)

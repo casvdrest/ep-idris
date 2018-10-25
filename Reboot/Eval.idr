@@ -62,9 +62,9 @@ proveEcho1 _ = Just $ (const (const ()))
 total
 proveCat1 : (fs : FSTree) -> Maybe ([[. FSTree .]] 
   ((Atom $ pathExists (FilePath [] "file1.txt")) /\ (Forall String (const T))))
-proveCat1 fs with (provePathExists fs (FilePath [] "file1.txt"))
+proveCat1 fs with (provePathExists (FilePath [] "file1.txt") fs)
   proveCat1 fs | Nothing = Nothing
-  proveCat1 fs | (Just x) = Just (x, const ())
+  proveCat1 fs | (Just x) = Just ((fs ** x), const ())
 
 cat1 : CmdF ()
 cat1 = do
