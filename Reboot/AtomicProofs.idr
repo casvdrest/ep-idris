@@ -5,6 +5,20 @@ import Data.So
 import Data.List
 import Syntax
 
+total 
+catRights : List (Either a b) -> List a
+catRights [] = []
+catRights ((Left l) :: xs) = l :: catRights xs
+catRights ((Right r) :: xs) = catRights xs
+
+pushPf : String -> (p : Path) -> (p = (FilePath xs x)) -> Path
+pushPf x (FilePath xs y) Refl = FilePath (x :: xs) y
+pushPf _ (DirPath _) Refl impossible
+
+pushPd : String -> (p : Path) -> (p = (DirPath xs)) -> Path
+pushPd x (DirPath xs) Refl = DirPath (x :: xs)
+pushPd y (FilePath _ _) Refl impossible
+
 ||| Given a list, construct a proof for each element that
 ||| it is in fact in the list
 elemProofs : (xs : List a) -> List (a >< (flip Elem) xs)
@@ -14,8 +28,8 @@ elemProofs (x :: xs) =
     elemProofs xs in
   (x ** Here) :: (map (\(y ** prf) => (y ** There prf)) rec)  
 
-total rec_prf_ty : List FSTree -> (Path, FSTree) -> Type 
-rec_prf_ty xs (p,fs) = (FSElem p fs, Elem fs xs)
+total rec_prf_ty : List FSTree -> Path -> (Path, FSTree) -> Type 
+rec_prf_ty xs p1 (p2,fs) = ((FSElem p2 fs, Elem fs xs), p1 = p2)
 
 filepath_pointsTo_node : FSElem (FilePath [] x) (FSNode y xs) -> Void
 filepath_pointsTo_node _ impossible
@@ -45,6 +59,25 @@ cmpeq_from_ThereDir (ThereDir fs x y n1) = Refl
 dirpath_cmpname_neq : (n1 = n2 -> Void) ->
   FSElem (DirPath (n1 :: xs)) (FSNode (MkFileInfo n2 md) ys) -> Void
 dirpath_cmpname_neq contra = contra . cmpeq_from_ThereDir
+
+lemma_rec_all_neg_dir : {fs : FSTree} -> (ys : List (Either 
+                                           (((Path, FSTree) >< rec_prf_ty xs p))
+                                           ((FSTree >< (\fs => FSElem p fs -> Void)))))
+                                      -> (Elem y ys -> y = Right contra)
+                                      -> (p : Path) 
+                                      -> Elem fs xs 
+                                      -> (FSElem p fs -> Void)
+
+
+lemma_rec_not_found_dir : {md : FileMD} -> (name : String) 
+                                    -> (p : Path) 
+                                    -> (prf : p = (DirPath cmps))
+                                    -> (xs : List FSTree) 
+                                    -> ({fs : FSTree} -> Elem fs xs -> (FSElem p fs -> Void))
+                                    -> FSElem (pushPd name p prf) 
+                                              (FSNode (MkFileInfo name md) xs) -> Void
+lemma_rec_not_found_dir name (DirPath cmps) Refl xs f 
+                             (ThereDir fs prf_rec prf_elem name) = f prf_elem prf_rec
 
 mutual 
   ||| Yields either a prove that the given path exists in the provided filesystem, 
@@ -85,22 +118,15 @@ mutual
     -- of the node
     provePathExists (FilePath (name :: xs) x) 
                     (FSNode (MkFileInfo name md) ys) 
-                      | (Yes Refl) = ?hole {-assert_total $ do
-      ((path, fs) ** (prf, prf_elem)) <- 
-        ( listToMaybe 
-        . catMaybes
-        . recurse {xs=ys} (FilePath xs x)
-        ) (elemProofs ys)
-      case path of
-        (DirPath xs) => ?hole
-        (FilePath xs' x') => 
-          case decEq xs xs' of 
-            (Yes Refl) => 
-              case decEq x x' of 
-                (Yes Refl) => 
-                  Just (ThereFile fs prf prf_elem name)
-                (No contra) => ?hole
-            (No contra) => ?hole -}
+                      | (Yes Refl) = ?hole {-  assert_total $
+       case  ( listToMaybe 
+             . catMaybes
+             . recurse {xs=ys} (FilePath xs x)
+             ) (elemProofs ys) of
+         Nothing => ?hole_1
+         (Just (((FilePath xs x), fs) ** ((prf1, prf2), Refl))) => 
+           Yes (ThereFile fs prf1 prf2 name)
+           -}
     
     -- Condition (a) is false, hence the path does not exist
     provePathExists (FilePath (y :: xs) x) 
@@ -135,19 +161,20 @@ mutual
     -- the node, so we recurse
     provePathExists (DirPath (name :: xs)) 
                     (FSNode (MkFileInfo name md) ys) 
-                      | (Yes Refl) = ?hole {-assert_total $ do
-      ((path, fs) ** (prf, prf_elem)) <- 
-        ( listToMaybe 
-        . catMaybes
-        . recurse (DirPath xs)
-        ) (elemProofs ys)
-      case path of
-        (FilePath xs x) => ?hole
-        (DirPath xs') => 
-          case decEq xs xs' of 
-            (Yes Refl) => 
-              Just (ThereDir fs prf prf_elem name)
-            (No contra) => ?hole -}
+                      | (Yes Refl) = assert_total $ 
+      let rec =
+        recurse {xs = ys} (DirPath xs) (elemProofs ys) in 
+      case catRights rec of
+         [] => 
+           No ( lemma_rec_not_found_dir name 
+                (DirPath (xs)) Refl ys 
+                (lemma_rec_all_neg_dir 
+                  rec ?lemma
+                  (DirPath xs))) 
+          {-
+         (Just (((DirPath xs), fs) ** 
+           ((prf1, prf2), Refl))) => 
+             Yes (ThereDir fs prf1 prf2 name) -}
             
     -- The head of the component list does not correspond with the name 
     -- stored in the node, hence the path does not exist.
@@ -163,18 +190,17 @@ mutual
   ||| Recursively search for proof on a list of FileSystem trees
   ||| TODO: pair Elem proof with FSElem proofs to prevent spurious 
   ||| call to isElem in recursive cases of provePathExists. 
-  recurse : {xs : List FSTree} -> (p : Path) 
+  recurse : {xs : List FSTree} -> (p : Path)
                                -> (lst : List (FSTree >< (flip Elem) xs)) 
-                               -> List (Dec ((Path, FSTree) >< rec_prf_ty xs))
+                               -> List (Either (((Path, FSTree) >< rec_prf_ty xs p))
+                                  ((FSTree >< (\fs => FSElem p fs -> Void))))
   recurse p [] = []
-  recurse {xs} p ((x ** prf) :: xs') with (provePathExists p x)
+  recurse p ((x ** prf) :: xs) with (provePathExists p x)
   
-    -- The child does not contain the path, so we yield a contra-proof
-    recurse {xs} p ((x ** prf) :: xs') | No contra = 
-      No ?contraprf :: recurse {xs=xs} p xs'
+    -- The child does not contain the path, so we return nothing
+    recurse p ((x ** prf) :: xs) | No contra = 
+      Right (x ** contra) :: recurse p xs
       
      -- Child contains the path, yield appropriate proof
-    recurse {xs} p ((x ** prf) :: xs') | (Yes y) = 
-      Yes ((p, x) ** (y, prf)) :: recurse p xs'
-   
- 
+    recurse p ((x ** prf) :: xs) | (Yes y) = 
+     Left ((p, x) ** ((y, prf), Refl)) :: recurse p xs
