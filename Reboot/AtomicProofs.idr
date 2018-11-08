@@ -5,23 +5,76 @@ import Data.So
 import Data.List
 import Syntax
 
+||| A proof that some element of a vector satisfies some property
+|||
+||| @ P the property to be satsified
+data Any : (P : a -> Type) -> List a -> Type where
+  ||| A proof that the satisfying element is the first one in the `Vect`
+  Here  : {P : a -> Type} -> {xs : List a} -> P x -> Any P (x :: xs)
+  
+  ||| A proof that the satsifying element is in the tail of the `Vect`
+  There : {P : a -> Type} -> {xs : List a} -> Any P xs -> Any P (x :: xs)
+
+||| No element of an empty vector satisfies any property
+anyNilAbsurd : {P : a -> Type} -> Any P [] -> Void
+anyNilAbsurd (Here _) impossible
+anyNilAbsurd (There _) impossible  
+  
+implementation Uninhabited (Any p Nil) where
+  uninhabited = anyNilAbsurd
+
+||| Eliminator for `Any`
+anyElim : {xs : List a} -> {P : a -> Type} -> (Any P xs -> b) -> (P x -> b) -> Any P (x :: xs) -> b
+anyElim _ f (Here p) = f p
+anyElim f _ (There p) = f p
+
+||| Given a decision procedure for a property, determine if an element of a
+||| vector satisfies it.
+|||
+||| @ P the property to be satisfied
+||| @ dec the decision procedure
+||| @ xs the vector to examine
+total
+any' : {P : a -> Type} -> (dec : (x : a) -> Dec (P x)) -> (xs : List a) -> Dec (Any P xs)
+any' _ Nil = No anyNilAbsurd
+any' p (x::xs) with (p x)
+  | Yes prf = Yes (Here prf)
+  | No prf =
+    case any' p xs of
+      Yes prf' => Yes (There prf')
+      No prf' => No (anyElim prf' prf)
+
+valueFromAny : {P : a -> Type} -> {xs : List a} -> Any P xs -> (a >< P)
+valueFromAny {xs = (x :: _)}  (Here y)  = (x ** y)
+valueFromAny {xs = (_ :: ys)} (There y) = valueFromAny y 
+
+valueFromElem : {x : a} -> Elem x xs -> a >< (\v => v = x)
+valueFromElem {x} _ = (x ** Refl)
+
 total 
 catRights : List (Either a b) -> List a
 catRights [] = []
 catRights ((Left l) :: xs) = l :: catRights xs
 catRights ((Right r) :: xs) = catRights xs
 
-pushPf : String -> (p : Path) -> (p = (FilePath xs x)) -> Path
-pushPf x (FilePath xs y) Refl = FilePath (x :: xs) y
-pushPf _ (DirPath _) Refl impossible
+total
+isLeft : {a : Type} -> (v : Either a b) -> Type 
+isLeft {a} v = (a >< \x => v = Left x)
 
-pushPd : String -> (p : Path) -> (p = (DirPath xs)) -> Path
-pushPd x (DirPath xs) Refl = DirPath (x :: xs)
-pushPd y (FilePath _ _) Refl impossible
+total 
+isRight : {b : Type} -> (v : Either a b) -> Type 
+isRight {b} v = (b >< \x => v = Right x)
+
+leftNotRight : Right r = Left l -> Void 
+leftNotRight Refl impossible
+
+decideLeft : {a : Type} -> {b : Type} -> (v : Either a b) -> Dec (isLeft v)
+decideLeft {a = a} (Left l) = Yes (l ** Refl)
+decideLeft {a = a} (Right r) = No ((\(_ ** prf) => leftNotRight prf))
 
 ||| Given a list, construct a proof for each element that
 ||| it is in fact in the list
-elemProofs : (xs : List a) -> List (a >< (flip Elem) xs)
+elemProofs : (xs : List a) -> List (a >< (\x => Elem x xs))
 elemProofs [] = []
 elemProofs (x :: xs) = 
   let rec = 
@@ -30,6 +83,9 @@ elemProofs (x :: xs) =
 
 total rec_prf_ty : List FSTree -> Path -> (Path, FSTree) -> Type 
 rec_prf_ty xs p1 (p2,fs) = ((FSElem p2 fs, Elem fs xs), p1 = p2)
+
+total rec_contra_ty : List FSTree -> Path -> FSTree -> Type 
+rec_contra_ty xs p fs = (FSElem p fs -> Void, Elem fs xs) 
 
 filepath_pointsTo_node : FSElem (FilePath [] x) (FSNode y xs) -> Void
 filepath_pointsTo_node _ impossible
@@ -60,24 +116,69 @@ dirpath_cmpname_neq : (n1 = n2 -> Void) ->
   FSElem (DirPath (n1 :: xs)) (FSNode (MkFileInfo n2 md) ys) -> Void
 dirpath_cmpname_neq contra = contra . cmpeq_from_ThereDir
 
-lemma_rec_all_neg_dir : {fs : FSTree} -> (ys : List (Either 
-                                           (((Path, FSTree) >< rec_prf_ty xs p))
-                                           ((FSTree >< (\fs => FSElem p fs -> Void)))))
-                                      -> (Elem y ys -> y = Right contra)
-                                      -> (p : Path) 
-                                      -> Elem fs xs 
-                                      -> (FSElem p fs -> Void)
+not_in_sublist : {P : a -> Type} -> (Any P (x::xs) -> Void) -> Any P xs -> Void 
+not_in_sublist contra = contra . There
 
+total
+lemma_fromright : {a : Type} -> {b : Type} -> 
+                  (x : Either a b) -> {xs : List (Either a b)} 
+                                   -> (Any AtomicProofs.isLeft xs -> Void) 
+                                   -> Elem x xs 
+                                   -> AtomicProofs.isRight x
+lemma_fromright (Left l) contra Here = void (contra (Here (l ** Refl)))
+lemma_fromright (Right r) contra Here = (r ** Refl)
+lemma_fromright x contra (There later) = 
+  lemma_fromright x (not_in_sublist contra) later             
 
-lemma_rec_not_found_dir : {md : FileMD} -> (name : String) 
-                                    -> (p : Path) 
-                                    -> (prf : p = (DirPath cmps))
-                                    -> (xs : List FSTree) 
-                                    -> ({fs : FSTree} -> Elem fs xs -> (FSElem p fs -> Void))
-                                    -> FSElem (pushPd name p prf) 
-                                              (FSNode (MkFileInfo name md) xs) -> Void
-lemma_rec_not_found_dir name (DirPath cmps) Refl xs f 
-                             (ThereDir fs prf_rec prf_elem name) = f prf_elem prf_rec
+total
+fs_from_rec : {p : Path} -> {ys : List FSTree} -> 
+              Either (((Path, FSTree) >< rec_prf_ty ys p)) 
+                     (FSTree >< rec_contra_ty ys p) -> FSTree
+fs_from_rec (Left (x ** pf)) = snd x
+fs_from_rec (Right r) = fst r
+
+lemma_lift_elem : {xs : List FSTree} -> 
+                  {ys : List (Either (((Path, FSTree) >< rec_prf_ty xs (DirPath ns)))
+                                     (FSTree  >< rec_contra_ty xs (DirPath ns)))} -> 
+                   length xs = length ys -> 
+                   Elem fs xs -> ((Either (((Path, FSTree) >< rec_prf_ty xs (DirPath ns)))
+                                 (FSTree  >< rec_contra_ty xs (DirPath ns))) 
+                                   >< (\rval => (Elem rval ys, fs = fs_from_rec rval)))
+lemma_lift_elem {xs} {ys} prf elem = ?asshole
+
+||| Recursively search for proof on a list of FileSystem trees
+total
+recurse : {xs : List FSTree} -> (p : Path)
+                             -> (lst : List (FSTree >< (\x => Elem x xs))) 
+  -> ((p : Path) -> (fs : FSTree) 
+                                            -> Dec (FSElem p fs))
+                             -> List (Either (((Path, FSTree) >< rec_prf_ty xs p))
+                                               (FSTree >< rec_contra_ty xs p))
+recurse _ [] _ = []
+recurse p ((x ** prf) :: xs) f with (f p x)
+  
+  -- The child does not contain the path, so we return nothing
+  recurse p ((x ** prf) :: xs) f | No contra = 
+    Right (x ** (contra, prf)) :: recurse p xs f
+     
+   -- Child contains the path, yield appropriate proof
+  recurse p ((x ** prf) :: xs) f | (Yes y) = 
+    Left ((p, x) ** ((y, prf), Refl)) :: recurse p xs f 
+               
+to_contra : {ys : List FSTree} -> 
+            {zs : List (Either (DPair (Path, FSTree) (rec_prf_ty ys (DirPath xs))) 
+                               (FSTree >< rec_contra_ty ys (DirPath xs)))} ->  
+            (Any AtomicProofs.isLeft zs -> Void) -> 
+            (v : (Either (DPair (Path, FSTree) (rec_prf_ty ys (DirPath xs))) 
+                         (FSTree >< rec_contra_ty ys (DirPath xs))) >< (\x => Elem x zs)) -> 
+            FSElem (DirPath xs) (fs_from_rec (fst v)) -> Void
+to_contra {ys} {zs} contra (x ** y) prf with (lemma_fromright {xs=zs} x contra y)
+  to_contra {ys = ys} {zs = zs} contra 
+            ((Right (fs ** (ctr, elem))) ** y) prf | 
+              ((fs ** (ctr,elem)) ** Refl) = ctr prf
+
+fseq_rwr : fs1 = fs2 -> FSElem p fs1 -> FSElem p fs2
+fseq_rwr Refl x = x
 
 mutual 
   ||| Yields either a prove that the given path exists in the provided filesystem, 
@@ -87,7 +188,7 @@ mutual
   
   -- A filepath that ends in a node does not exist
   provePathExists (FilePath [] x) 
-                  (FSNode y xs) = No (filepath_pointsTo_node)
+                   (FSNode y xs) = No (filepath_pointsTo_node)
                   
   -- A filepath that ends in a leaf exists iff the name of the file 
   -- in the leaf is equal to the filename in the filepath.                 
@@ -162,19 +263,15 @@ mutual
     provePathExists (DirPath (name :: xs)) 
                     (FSNode (MkFileInfo name md) ys) 
                       | (Yes Refl) = assert_total $ 
-      let rec =
-        recurse {xs = ys} (DirPath xs) (elemProofs ys) in 
-      case catRights rec of
-         [] => 
-           No ( lemma_rec_not_found_dir name 
-                (DirPath (xs)) Refl ys 
-                (lemma_rec_all_neg_dir 
-                  rec ?lemma
-                  (DirPath xs))) 
-          {-
-         (Just (((DirPath xs), fs) ** 
-           ((prf1, prf2), Refl))) => 
-             Yes (ThereDir fs prf1 prf2 name) -}
+      let rec = 
+        (recurse {xs = ys} (DirPath xs) (elemProofs ys) provePathExists) in 
+      case any' {P=isLeft} decideLeft rec of
+         (Yes prf) =>  
+           case valueFromAny prf of 
+             (_ ** (((DirPath xs), fs) ** ((prf1, prf2), Refl)) ** _) => 
+               Yes (ThereDir fs prf1 prf2 name)
+         (No contra) => let leneq = ?hole in No (lemma_dir_contra {rec=rec} {leneq=leneq} contra)
+           
             
     -- The head of the component list does not correspond with the name 
     -- stored in the node, hence the path does not exist.
@@ -183,24 +280,29 @@ mutual
                       | (No contra) =  No (dirpath_cmpname_neq contra)
                       
   -- A directory path with a non-empty component list that 
-  -- ends in a node does not exist in the filesystem. 
+   -- ends in a node does not exist in the filesystem. 
   provePathExists (DirPath (x :: xs)) 
                   (FSLeaf y) = No dirpath_pointsTo_leaf
-  
-  ||| Recursively search for proof on a list of FileSystem trees
-  ||| TODO: pair Elem proof with FSElem proofs to prevent spurious 
-  ||| call to isElem in recursive cases of provePathExists. 
-  recurse : {xs : List FSTree} -> (p : Path)
-                               -> (lst : List (FSTree >< (flip Elem) xs)) 
-                               -> List (Either (((Path, FSTree) >< rec_prf_ty xs p))
-                                  ((FSTree >< (\fs => FSElem p fs -> Void))))
-  recurse p [] = []
-  recurse p ((x ** prf) :: xs) with (provePathExists p x)
-  
-    -- The child does not contain the path, so we return nothing
-    recurse p ((x ** prf) :: xs) | No contra = 
-      Right (x ** contra) :: recurse p xs
+
+  lemma_dir_contra : {rec : List (Either (((Path, FSTree) >< rec_prf_ty ys (DirPath xs)))
+                                               (FSTree  >< rec_contra_ty ys (DirPath xs)))} -> 
+                     {leneq : length rec = length ys} -> 
+                     (Any AtomicProofs.isLeft rec -> Void) ->
+                     FSElem (DirPath (n::xs)) (FSNode (MkFileInfo n md) ys) -> Void
+  lemma_dir_contra {ys} {xs} {leneq} contra 
+    (ThereDir fs2 x y n) with ((lemma_dir_conv {leneq=leneq} {fs=fs2} y))
+    lemma_dir_contra {ys} {xs} {leneq} contra (ThereDir fs x y n) | (rval  ** (elem, fseqprf)) = 
+      to_contra {ys=ys} {xs=xs} contra (rval ** elem) (fseq_rwr fseqprf x)   
       
-     -- Child contains the path, yield appropriate proof
-    recurse p ((x ** prf) :: xs) | (Yes y) = 
-     Left ((p, x) ** ((y, prf), Refl)) :: recurse p xs
+  lemma_dir_conv : {rec : List (Either (((Path, FSTree) >< rec_prf_ty ys (DirPath xs)))
+                                               (FSTree  >< rec_contra_ty ys (DirPath xs)))} -> 
+                   {leneq : length rec = length ys} -> 
+                   {fs : FSTree} -> Elem fs ys -> 
+                       (Either (((Path, FSTree) >< rec_prf_ty ys (DirPath xs)))
+                               (FSTree  >< rec_contra_ty ys (DirPath xs)) 
+                         >< (\rval => (Elem rval rec, fs = fs_from_rec rval)))
+  lemma_dir_conv {ys} {rec} {fs} {leneq} elem 
+                 with (lemma_lift_elem {xs=ys} {ys=rec} (sym leneq) elem) 
+    lemma_dir_conv {ys} {rec} {fs} elem | res = res
+ 
+ 
