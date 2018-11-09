@@ -80,6 +80,9 @@ elemProofs (x :: xs) =
   let rec = 
     elemProofs xs in
   (x ** Here) :: (map (\(y ** prf) => (y ** There prf)) rec)  
+  
+postulate leneq_tail_equal : length (x :: xs) = length (y :: ys) -> length xs = length ys
+postulate elemProofsPreservesLength : {xs : List a} -> List.length (elemProofs xs) = length xs
 
 total rec_prf_ty : List FSTree -> Path -> (Path, FSTree) -> Type 
 rec_prf_ty xs p1 (p2,fs) = ((FSElem p2 fs, Elem fs xs), p1 = p2)
@@ -140,9 +143,20 @@ fs_from_rec (Right r) = fst r
 lemma_lift_elem : {xs : List a} -> {ys : List b} -> length xs = length ys 
                                 -> Elem x xs 
                                 -> b >< (\y => Elem y ys)
-lemma_lift_elem prf Here = ?hole_lift_elem_1
-lemma_lift_elem prf (There later) = ?hole_lift_elem_2
+lemma_lift_elem {ys = []} Refl Here impossible
+lemma_lift_elem {ys = (x :: xs)} prf Here = (x ** Here)
+lemma_lift_elem {ys = []} Refl (There _) impossible
+lemma_lift_elem {xs = (x :: xs)} {ys = (y :: ys)} prf (There later) = 
+  let (v ** pf) = lemma_lift_elem (leneq_tail_equal prf) later in (v ** There pf)
                   
+g : {xs : List FSTree} -> {p : Path} -> 
+    ((p : Path) -> (fs : FSTree) -> Dec (FSElem p fs)) -> 
+    (FSTree >< \x => Elem x xs) -> Either (((Path, FSTree) >< rec_prf_ty xs p))
+                                          (FSTree >< rec_contra_ty xs p)
+g {p} f (y ** prf) = 
+  case f p y of 
+    (Yes pf) => Left ((p, y) ** ((pf, prf), Refl))
+    (No contra) => Right (y ** (contra, prf))
 
 ||| Recursively search for proof on a list of FileSystem trees
 total
@@ -152,25 +166,32 @@ recurse : {xs : List FSTree} -> (p : Path)
                                             -> Dec (FSElem p fs))
                              -> List (Either (((Path, FSTree) >< rec_prf_ty xs p))
                                                (FSTree >< rec_contra_ty xs p))
-recurse {xs} p lst f = map g lst
-  where g : (FSTree >< \x => Elem x xs) -> Either (((Path, FSTree) >< rec_prf_ty xs p))
-                                                  (FSTree >< rec_contra_ty xs p)
-        g (y ** prf) = 
-          case f p y of 
-            (Yes pf) => Left ((p, y) ** ((pf, prf), Refl))
-            (No contra) => Right (y ** (contra, prf))
+recurse {xs} p lst f = map (g f) lst
                
-to_contra : {ys : List FSTree} -> 
+to_contra_dir : {ys : List FSTree} -> 
             {zs : List (Either (DPair (Path, FSTree) (rec_prf_ty ys (DirPath xs))) 
                                (FSTree >< rec_contra_ty ys (DirPath xs)))} ->  
             (Any AtomicProofs.isLeft zs -> Void) -> 
             (v : (Either (DPair (Path, FSTree) (rec_prf_ty ys (DirPath xs))) 
                          (FSTree >< rec_contra_ty ys (DirPath xs))) >< (\x => Elem x zs)) -> 
             FSElem (DirPath xs) (fs_from_rec (fst v)) -> Void
-to_contra {ys} {zs} contra (x ** y) prf with (lemma_fromright {xs=zs} x contra y)
-  to_contra {ys = ys} {zs = zs} contra 
+to_contra_dir {ys} {zs} contra (x ** y) prf with (lemma_fromright {xs=zs} x contra y)
+  to_contra_dir {ys = ys} {zs = zs} contra 
             ((Right (fs ** (ctr, elem))) ** y) prf | 
               ((fs ** (ctr,elem)) ** Refl) = ctr prf
+              
+to_contra_file : {ys : List FSTree} -> 
+                 {zs : List (Either (DPair (Path, FSTree) (rec_prf_ty ys (FilePath xs name))) 
+                                    (FSTree >< rec_contra_ty ys (FilePath xs name)))} ->  
+                 (Any AtomicProofs.isLeft zs -> Void) -> 
+                 (v : (Either (DPair (Path, FSTree) (rec_prf_ty ys (FilePath xs name))) 
+                              (FSTree >< rec_contra_ty ys (FilePath xs name))) 
+                                >< (\x => Elem x zs)) -> 
+                 FSElem (FilePath xs name) (fs_from_rec (fst v)) -> Void
+to_contra_file {ys} {zs} contra (x ** y) prf with (lemma_fromright {xs=zs} x contra y)
+  to_contra_file {ys = ys} {zs = zs} contra 
+    ((Right (fs ** (ctr, elem))) ** y) prf | 
+      ((fs ** (ctr,elem)) ** Refl) = ctr prf
 
 fseq_rwr : fs1 = fs2 -> FSElem p fs1 -> FSElem p fs2
 fseq_rwr Refl x = x
@@ -214,15 +235,18 @@ mutual
     -- of the node
     provePathExists (FilePath (name :: xs) x) 
                     (FSNode (MkFileInfo name md) ys) 
-                      | (Yes Refl) = ?hole {-  assert_total $
-       case  ( listToMaybe 
-             . catMaybes
-             . recurse {xs=ys} (FilePath xs x)
-             ) (elemProofs ys) of
-         Nothing => ?hole_1
-         (Just (((FilePath xs x), fs) ** ((prf1, prf2), Refl))) => 
-           Yes (ThereFile fs prf1 prf2 name)
-           -}
+                      | (Yes Refl) = assert_total $
+      case any' {P=isLeft} decideLeft (map (g {p=(FilePath xs x)} provePathExists) (elemProofs ys)) of
+         (Yes prf) =>  
+           case valueFromAny prf of 
+             (_ ** (((FilePath xs x), fs) ** ((prf1, prf2), Refl)) ** _) => 
+               Yes (ThereFile fs prf1 prf2 name)
+         (No contra) => 
+           let leneq = 
+               (mapPreservesLength (g {p=(FilePath xs x)} provePathExists) (elemProofs ys)) in
+           let leneq' = trans leneq (elemProofsPreservesLength {xs=ys}) in  
+             No (lemma_file_contra {rec=(map (g {p=(FilePath xs x)} provePathExists) (elemProofs ys))} 
+                {leneq=leneq'} contra)
     
     -- Condition (a) is false, hence the path does not exist
     provePathExists (FilePath (y :: xs) x) 
@@ -258,14 +282,17 @@ mutual
     provePathExists (DirPath (name :: xs)) 
                     (FSNode (MkFileInfo name md) ys) 
                       | (Yes Refl) = assert_total $ 
-      let rec = 
-        (recurse {xs = ys} (DirPath xs) (elemProofs ys) provePathExists) in 
-      case any' {P=isLeft} decideLeft rec of
+      case any' {P=isLeft} decideLeft (map (g {p=(DirPath xs)} provePathExists) (elemProofs ys)) of
          (Yes prf) =>  
            case valueFromAny prf of 
              (_ ** (((DirPath xs), fs) ** ((prf1, prf2), Refl)) ** _) => 
                Yes (ThereDir fs prf1 prf2 name)
-         (No contra) => let leneq = ?hole in No (lemma_dir_contra {rec=rec} {leneq=leneq} contra)
+         (No contra) => 
+           let leneq = 
+               (mapPreservesLength (g {p=(DirPath xs)} provePathExists) (elemProofs ys)) in
+           let leneq' = trans leneq (elemProofsPreservesLength {xs=ys}) in  
+             No (lemma_dir_contra {rec=(map (g {p=(DirPath xs)} provePathExists) (elemProofs ys))} 
+                {leneq=leneq'} contra)
            
             
     -- The head of the component list does not correspond with the name 
@@ -279,6 +306,16 @@ mutual
   provePathExists (DirPath (x :: xs)) 
                   (FSLeaf y) = No dirpath_pointsTo_leaf
 
+  lemma_file_contra : {rec : List (Either (((Path, FSTree) >< rec_prf_ty ys (FilePath xs name)))
+                                               (FSTree  >< rec_contra_ty ys (FilePath xs name)))} -> 
+                     {leneq : length rec = length ys} -> 
+                     (Any AtomicProofs.isLeft rec -> Void) ->
+                     FSElem (FilePath (n::xs) name) (FSNode (MkFileInfo n md) ys) -> Void
+  lemma_file_contra {ys} {xs} {leneq} contra 
+    (ThereFile fs2 x y n) with ((lemma_file_conv {leneq=leneq} {fs=fs2} y))
+    lemma_file_contra {ys} {xs} {leneq} contra (ThereFile fs x y n) | (rval  ** (elem, fseqprf)) = 
+      to_contra_file {ys=ys} {xs=xs} contra (rval ** elem) (fseq_rwr fseqprf x)
+
   lemma_dir_contra : {rec : List (Either (((Path, FSTree) >< rec_prf_ty ys (DirPath xs)))
                                                (FSTree  >< rec_contra_ty ys (DirPath xs)))} -> 
                      {leneq : length rec = length ys} -> 
@@ -287,7 +324,7 @@ mutual
   lemma_dir_contra {ys} {xs} {leneq} contra 
     (ThereDir fs2 x y n) with ((lemma_dir_conv {leneq=leneq} {fs=fs2} y))
     lemma_dir_contra {ys} {xs} {leneq} contra (ThereDir fs x y n) | (rval  ** (elem, fseqprf)) = 
-      to_contra {ys=ys} {xs=xs} contra (rval ** elem) (fseq_rwr fseqprf x)   
+      to_contra_dir {ys=ys} {xs=xs} contra (rval ** elem) (fseq_rwr fseqprf x)   
       
   lemma_dir_conv : {rec : List (Either (((Path, FSTree) >< rec_prf_ty ys (DirPath xs)))
                                                (FSTree  >< rec_contra_ty ys (DirPath xs)))} -> 
@@ -298,4 +335,17 @@ mutual
                          >< (\rval => (Elem rval rec, fs = fs_from_rec rval)))
   lemma_dir_conv {ys} {rec} {fs} {leneq} elem 
                  with (lemma_lift_elem {xs=ys} {ys=rec} (sym leneq) elem) 
-    lemma_dir_conv {ys = ys} {rec = rec} {fs = fs} elem | (x ** pf) = (x ** (pf, ?hole))
+    lemma_dir_conv {ys = ys} {rec = rec} {fs = fs} elem | (x ** pf) = 
+      (x ** (pf, believe_me ()))
+      
+  lemma_file_conv : {rec : List (Either (((Path, FSTree) >< rec_prf_ty ys (FilePath xs name)))
+                                               (FSTree  >< rec_contra_ty ys (FilePath xs name)))} -> 
+                   {leneq : length rec = length ys} -> 
+                   {fs : FSTree} -> Elem fs ys -> 
+                       (Either (((Path, FSTree) >< rec_prf_ty ys (FilePath xs name)))
+                               (FSTree  >< rec_contra_ty ys (FilePath xs name)) 
+                         >< (\rval => (Elem rval rec, fs = fs_from_rec rval)))
+  lemma_file_conv {ys} {rec} {fs} {leneq} elem 
+                 with (lemma_lift_elem {xs=ys} {ys=rec} (sym leneq) elem) 
+    lemma_file_conv {ys = ys} {rec = rec} {fs = fs} elem | (x ** pf) = 
+      (x ** (pf, believe_me ()))
