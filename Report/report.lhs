@@ -183,15 +183,15 @@ Using a deep embedding for predicates, we can simply write:
 [[..]] T && (Forall String (\x => T && Forall String (\y => T)))
 \end{code}
 
-Both expressions yield the same value, and are interchangeable. The \texttt{[[..]]} modifier is simply defined as a function with type $Predicate s -> Type$ that yields an appropriate type for a given predicate. 
+Both expressions yield the same value, and are interchangeable. The \texttt{[[..]]} modifier is simply defined as a function with type $Predicate s \rightarrow s \rightarrow Type$ that yields an appropriate type for a given predicate. 
 
 The $Predicate$ datatype in its entirety is defined as follows: 
 
 \begin{code}
 data Predicate : Type -> Type where 
+  data Predicate : Type -> Type where 
   (/\)  : Predicate s -> Predicate s -> Predicate s
   (:=>) : Predicate s -> Predicate s -> Predicate s
-  (=:=) : (DecEq a) => a -> a -> Predicate s
   Forall : (a : Type) -> (a -> Predicate s) -> Predicate s
   Exists : (a : Type) -> (a -> Predicate s) -> Predicate s
   Atom : (s -> Type) -> Predicate s
@@ -199,9 +199,20 @@ data Predicate : Type -> Type where
   F : Predicate s
 \end{code}
 
-\subsubsection{Atomic Predicates}
+The $Atom$ constructor allows for the inclusion of properties that reason about values of the type that a predicate ranges over. For example, suppose we are constructing a predicate that ranges over natural numbers and want to specify that a number is equal to some nuber $m$. We could use the following atomic predicate: 
 
-A couple of atomic predicates are provided for the user to make assembling the precondition easier. Considering our representation of the filesystem, we would need a way to reason about the following three properties: 
+\begin{code}
+isM : Nat -> Nat -> Type 
+isM m = [[..]] (Atom $ (\n => n = m))
+\end{code}
+
+Obviously, we can only construct an inhabitant for $isM$ $m$ $n$ if $n = m$. 
+
+\subsubsection{Provided Atomic Predicates}
+
+The approach for constructing atomic predicates described in the previous section can just as well be employed to define properties of other types. In our case, it makes most sense to define preconditions to be of the type $Predicate$ $FSTree$ (i.e. a script's precondition ranges over the state of the filesystem).  
+
+Atomic predicates to specify the following properties are provided: 
 
 \begin{itemize}
 \item 
@@ -213,6 +224,30 @@ If a path exists, whether the node it points to is of a certain type (i.e. \text
 \item 
 If a path exists, whether the current user has certain permissions on the node that the path points to. 
 \end{itemize}
+
+The former two are quite easily specified once we have a datatype in place that holds proofs that a given path exists in a filesystem. For this datatype, we draw inspiration from the $Elem$ datatype, which is a witness to the fact that a certain element can be found in a list. The resulting datatype is defined as follows: 
+
+\begin{code}
+data FSElem : Path -> FSTree -> Type where 
+  HereDir  : FSElem  (DirPath []) 
+                     (FSNode x xs)
+  HereFile : (n1 = n2) -> FSElem  (FilePath [] n1) 
+                                  (FSLeaf (MkFileInfo n2 md)) 
+  ThereDir : (fs : FSTree)  -> FSElem (DirPath xs) fs 
+                            -> Elem fs ys -> (n : String) 
+                            -> FSElem  (DirPath (n :: xs)) 
+                                       (FSNode (MkFileInfo n md) ys)
+  ThereFile : (fs : FSTree)  -> FSElem (FilePath xs x) fs 
+                             -> Elem fs ys -> (n : String)
+                             -> FSElem  (FilePath (n :: xs) x) 
+                                        (FSNode (MkFileInfo n md) ys)
+\end{code}
+
+Though rather lengthy, the definition is actually quite straightforward. Any directory path with no components (i.e. "/") is part of a filesystem that has a node at the root. Any file with no components (i.e. "/filename.ext") is part of a filesystem that is just a leaf, provided the file in the leaf has the same name. 
+
+In the recursive case, a path is in a filesystem if the first component is equal to the name of the file that is at the root node of the filesystem, there is a proof that the remainder of the path is part of some other filesystem, and there is a proof that said filesystem is one of the children of the root node. 
+
+
 
 \subsection{Shallow Embedding Using Control.ST}
 

@@ -79,3 +79,9 @@ cat1 = do
 
 main : IO ()
 main = run (echo "Hallo, Wereld!") (\_ => Just (const ()))
+
+is10 : Nat -> Type 
+is10 = [[..]] (Atom $ (\n => n = 10))
+
+prove10 : is10 10
+prove10 = Refl
