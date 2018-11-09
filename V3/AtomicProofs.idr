@@ -435,4 +435,3 @@ mutual
 export total     
 provePathHasType : (p : Path) -> (ft : FType) -> (prf : FSElem p fs) -> Dec (typeIs ft prf)
 provePathHasType p ft prf = decEq (getFType $ fileFromProof prf) ft
- 

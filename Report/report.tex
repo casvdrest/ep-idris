@@ -477,9 +477,12 @@ Sigma types are modelled as dependent pairs in Idris. For convinience, the infix
 
 A deep embedding exists for predicates in order to allow for easier manipulation of predicates, and more readable code. For example, consider the precondition of two subsequent \texttt{echo} commands:
 
-\begin{equation*}
-true \land (\forall (x:String):true \land (\forall (y:String):true)) 
-\end{equation*}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{true}\mathrel{\wedge}(\forall\;(\Varid{x}\mathbin{:}\Conid{String})\mathbin{:}\Varid{true}\mathrel{\wedge}(\forall\;(\Varid{y}\mathbin{:}\Conid{String})\mathbin{:}\Varid{true})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
 
 This corresponds to the following type:
 
@@ -503,7 +506,18 @@ Both expressions yield the same value, and are interchangeable. Similar syntax c
 
 \subsubsection{Atomic Predicates}
 
-A couple of atomic predicates are provided for the user to make assembling the precondition easier. Most notably, proving that a file exists 
+A couple of atomic predicates are provided for the user to make assembling the precondition easier. Considering our representation of the filesystem, we would need a way to reason about the following three properties: 
+
+\begin{itemize}
+\item 
+Whether a given path exists in the filesystem at all 
+
+\item
+If a path exists, whether the node it points to is of a certain type (i.e. \textit{File} or \textit{Directory}) 
+
+\item 
+If a path exists, whether the current user has certain permissions on the node that the path points to. 
+\end{itemize}
 
 \subsection{Shallow Embedding Using Control.ST}
 
@@ -514,7 +528,6 @@ A couple of atomic predicates are provided for the user to make assembling the p
 \section{Conclusion}
 
 \section{Future Work}
-Finish the report
 
 \begin{thebibliography}{99}
 \bibitem{moore14}

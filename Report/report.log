@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018/Arch Linux) (preloaded format=pdflatex 2018.10.29)  9 NOV 2018 15:08
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018/Arch Linux) (preloaded format=pdflatex 2018.10.29)  9 NOV 2018 15:09
 entering extended mode
  \write18 enabled.
  %&-line parsing enabled.
@@ -629,23 +629,33 @@ B29.pygtex) [2]
 
 \openout3 = `report.ptb'.
 
+\openout3 = `report.ptb'.
+
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 513.
+
+ (/usr/share/texmf-dist/tex/latex/base/omscmr.fd
+File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 513.
  [4]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 534.
- [5]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 534.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 547.
+
+[5]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 547.
  (./report.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 534.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 534.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 547.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 547.
 Package rerunfilecheck Info: File `report.out' has not changed.
 (rerunfilecheck)             Checksum: 805501590051844E89B52C7147E80144;900.
 runsystem(rm report.pyg)...executed.
 
  ) 
 Here is how much of TeX's memory you used:
- 10305 strings out of 492642
- 161724 string characters out of 6135565
- 316526 words of memory out of 5000000
- 13991 multiletter control sequences out of 15000+600000
+ 10322 strings out of 492642
+ 162003 string characters out of 6135565
+ 317526 words of memory out of 5000000
+ 14005 multiletter control sequences out of 15000+600000
  14340 words of font info for 55 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  37i,8n,35p,821b,447s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -657,7 +667,7 @@ mr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/
 share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-di
 st/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/share/texmf-dist/fonts/type1
 /public/amsfonts/cm/cmtt10.pfb>
-Output written on report.pdf (5 pages, 136795 bytes).
+Output written on report.pdf (5 pages, 136339 bytes).
 PDF statistics:
  139 PDF objects out of 1000 (max. 8388607)
  121 compressed objects within 2 object streams

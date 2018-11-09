@@ -147,9 +147,9 @@ It should be obvious that leafs are only meant to contain files, and nodes are s
 
 The programmer may use standard predicate logic to express a commands behaviour. As discussed before, this by no means enough to capture all the intricacies of script's behaviour, but we should at least be able to rule out certain errors by defining a sufficiently strong precondition. 
 
-\subsubsection{Embedding of Predicate Logic}
+\subsubsection{Embedding of Predicates}
 
-Propositions are commonly defined as a type, and justified by supplying a definition that inhabits said type. Converting a formula in predicate logic to its corresponding type is relatively straightforward. I assume the following mapping: 
+In a dependently typed language, propositions are commonly defined as a type, and justified by supplying a definition that inhabits said type. Converting a formula in predicate logic to its corresponding type is relatively straightforward. I assume the following mapping: 
 
 \begin{code}
 
@@ -167,9 +167,9 @@ Sigma types are modelled as dependent pairs in Idris. For convinience, the infix
 
 A deep embedding exists for predicates in order to allow for easier manipulation of predicates, and more readable code. For example, consider the precondition of two subsequent \texttt{echo} commands:
 
-\begin{equation*}
-true \land (\forall (x:String):true \land (\forall (y:String):true)) 
-\end{equation*}
+\begin{code}
+true && (forall (x:String):true && (forall (y:String):true)) 
+\end{code}
 
 This corresponds to the following type:
 
@@ -183,7 +183,21 @@ Using a deep embedding for predicates, we can simply write:
 [[..]] T && (Forall String (\x => T && Forall String (\y => T)))
 \end{code}
 
-Both expressions yield the same value, and are interchangeable. Similar syntax could be defined for writing inhabitants, but this is unfortunately not so easy, as we would need a way to convert \texttt{Forall x P} to \texttt{$\lambda$s=>P}, where every free occurence of \texttt{x} in \texttt{P} is bound by the lambda abstraction. 
+Both expressions yield the same value, and are interchangeable. The \texttt{[[..]]} modifier is simply defined as a function with type $Predicate s -> Type$ that yields an appropriate type for a given predicate. 
+
+The $Predicate$ datatype in its entirety is defined as follows: 
+
+\begin{code}
+data Predicate : Type -> Type where 
+  (/\)  : Predicate s -> Predicate s -> Predicate s
+  (:=>) : Predicate s -> Predicate s -> Predicate s
+  (=:=) : (DecEq a) => a -> a -> Predicate s
+  Forall : (a : Type) -> (a -> Predicate s) -> Predicate s
+  Exists : (a : Type) -> (a -> Predicate s) -> Predicate s
+  Atom : (s -> Type) -> Predicate s
+  T : Predicate s
+  F : Predicate s
+\end{code}
 
 \subsubsection{Atomic Predicates}
 

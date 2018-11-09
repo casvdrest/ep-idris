@@ -20,7 +20,7 @@ data Predicate : Type -> Type where
   (:=>) : Predicate s -> Predicate s -> Predicate s
   (=:=) : (DecEq a) => a -> a -> Predicate s
   Forall : (a : Type) -> (a -> Predicate s) -> Predicate s
-  --Exists : (a : Type) -> (a -> Predicate s) -> Predicate s
+  Exists : (a : Type) -> (a -> Predicate s) -> Predicate s
   Atom : (s -> Type) -> Predicate s
   T : Predicate s
   F : Predicate s
@@ -37,15 +37,15 @@ tyFromBool True = Unit
 tyFromBool False = Void
 
 total
-asType : {s : Type} -> Predicate s -> Type 
-asType (p /\ q)  = (asType p, asType q)
-asType (p :=> q)  = asType p -> asType q
-asType (a =:= b)  = (a = b)
-asType (Forall ty p) = ((x : ty) -> asType (p x))
---asType (Exists ty p) = (\s => (ty >< (\x => asType (p x) s)))
-asType (Atom f)   = s >< f
-asType T          = Unit 
-asType F          = Void
+asType : {s : Type} -> Predicate s -> (s -> Type) 
+asType (p /\ q) x   = (asType p x, asType q x)
+asType (p :=> q) x  = asType p x -> asType q x
+asType (a =:= b) _  = (a = b)
+asType (Forall ty p) y = ((x : ty) -> asType (p x) y)
+asType (Exists ty p) y = (ty >< (\x => asType (p x) y))
+asType (Atom f) x = f x 
+asType T        _ = Unit
+asType F        _ = Void
 
 syntax "[[..]]" [pred] = asType pred
 syntax "[[." [ty] ".]]" [pred] = asType {s = ty} pred
@@ -130,3 +130,7 @@ pre (Pure _) = T
 interface Monad m  => CmdExec (m : Type -> Type) where 
   cmdExec : CmdF a -> m ()
 
+
+-- Local Variables:
+-- idris-load-packages: ("lightyear" "contrib")
+-- End:
