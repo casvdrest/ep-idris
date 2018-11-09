@@ -1,0 +1,534 @@
+\documentclass[11pt,a4paper]{article}
+
+% Quotes
+\usepackage{epigraph}
+\renewcommand{\epigraphwidth}{8cm}
+
+\usepackage{geometry}
+
+\usepackage[utf8]{inputenc}
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+%
+%
+\makeatletter
+\@ifundefined{lhs2tex.lhs2tex.sty.read}%
+  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
+   \newcommand\SkipToFmtEnd{}%
+   \newcommand\EndFmtInput{}%
+   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
+  }\SkipToFmtEnd
+
+\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
+\usepackage{amstext}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\usepackage{polytable}
+
+%mathindent has to be defined
+\@ifundefined{mathindent}%
+  {\newdimen\mathindent\mathindent\leftmargini}%
+  {}%
+
+\def\resethooks{%
+  \global\let\SaveRestoreHook\empty
+  \global\let\ColumnHook\empty}
+\newcommand*{\savecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
+\newcommand*{\restorecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
+\newcommand*{\aligncolumn}[2]%
+  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
+
+\resethooks
+
+\newcommand{\onelinecommentchars}{\quad-{}- }
+\newcommand{\commentbeginchars}{\enskip\{-}
+\newcommand{\commentendchars}{-\}\enskip}
+
+\newcommand{\visiblecomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \let\commentbegin=\commentbeginchars
+  \let\commentend=\commentendchars}
+
+\newcommand{\invisiblecomments}{%
+  \let\onelinecomment=\empty
+  \let\commentbegin=\empty
+  \let\commentend=\empty}
+
+\visiblecomments
+
+\newlength{\blanklineskip}
+\setlength{\blanklineskip}{0.66084ex}
+
+\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
+\let\hspre\empty
+\let\hspost\empty
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\EndFmtInput
+\makeatother
+%
+%
+%
+%
+%
+%
+% This package provides two environments suitable to take the place
+% of hscode, called "plainhscode" and "arrayhscode". 
+%
+% The plain environment surrounds each code block by vertical space,
+% and it uses \abovedisplayskip and \belowdisplayskip to get spacing
+% similar to formulas. Note that if these dimensions are changed,
+% the spacing around displayed math formulas changes as well.
+% All code is indented using \leftskip.
+%
+% Changed 19.08.2004 to reflect changes in colorcode. Should work with
+% CodeGroup.sty.
+%
+\ReadOnlyOnce{polycode.fmt}%
+\makeatletter
+
+\newcommand{\hsnewpar}[1]%
+  {{\parskip=0pt\parindent=0pt\par\vskip #1\noindent}}
+
+% can be used, for instance, to redefine the code size, by setting the
+% command to \small or something alike
+\newcommand{\hscodestyle}{}
+
+% The command \sethscode can be used to switch the code formatting
+% behaviour by mapping the hscode environment in the subst directive
+% to a new LaTeX environment.
+
+\newcommand{\sethscode}[1]%
+  {\expandafter\let\expandafter\hscode\csname #1\endcsname
+   \expandafter\let\expandafter\endhscode\csname end#1\endcsname}
+
+% "compatibility" mode restores the non-polycode.fmt layout.
+
+\newenvironment{compathscode}%
+  {\par\noindent
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed\)%
+   \par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\compaths}{\sethscode{compathscode}}
+
+% "plain" mode is the proposed default.
+% It should now work with \centering.
+% This required some changes. The old version
+% is still available for reference as oldplainhscode.
+
+\newenvironment{plainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newenvironment{oldplainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+% Here, we make plainhscode the default environment.
+
+\newcommand{\plainhs}{\sethscode{plainhscode}}
+\newcommand{\oldplainhs}{\sethscode{oldplainhscode}}
+\plainhs
+
+% The arrayhscode is like plain, but makes use of polytable's
+% parray environment which disallows page breaks in code blocks.
+
+\newenvironment{arrayhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\parray}%
+  {\endparray\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newcommand{\arrayhs}{\sethscode{arrayhscode}}
+
+% The mathhscode environment also makes use of polytable's parray 
+% environment. It is supposed to be used only inside math mode 
+% (I used it to typeset the type rules in my thesis).
+
+\newenvironment{mathhscode}%
+  {\parray}{\endparray}
+
+\newcommand{\mathhs}{\sethscode{mathhscode}}
+
+% texths is similar to mathhs, but works in text mode.
+
+\newenvironment{texthscode}%
+  {\(\parray}{\endparray\)}
+
+\newcommand{\texths}{\sethscode{texthscode}}
+
+% The framed environment places code in a framed box.
+
+\def\codeframewidth{\arrayrulewidth}
+\RequirePackage{calc}
+
+\newenvironment{framedhscode}%
+  {\parskip=\abovedisplayskip\par\noindent
+   \hscodestyle
+   \arrayrulewidth=\codeframewidth
+   \tabular{@{}|p{\linewidth-2\arraycolsep-2\arrayrulewidth-2pt}|@{}}%
+   \hline\framedhslinecorrect\\{-1.5ex}%
+   \let\endoflinesave=\\
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \framedhslinecorrect\endoflinesave{.5ex}\hline
+   \endtabular
+   \parskip=\belowdisplayskip\par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\framedhslinecorrect}[2]%
+  {#1[#2]}
+
+\newcommand{\framedhs}{\sethscode{framedhscode}}
+
+% The inlinehscode environment is an experimental environment
+% that can be used to typeset displayed code inline.
+
+\newenvironment{inlinehscode}%
+  {\(\def\column##1##2{}%
+   \let\>\undefined\let\<\undefined\let\\\undefined
+   \newcommand\>[1][]{}\newcommand\<[1][]{}\newcommand\\[1][]{}%
+   \def\fromto##1##2##3{##3}%
+   \def\nextline{}}{\) }%
+
+\newcommand{\inlinehs}{\sethscode{inlinehscode}}
+
+% The joincode environment is a separate environment that
+% can be used to surround and thereby connect multiple code
+% blocks.
+
+\newenvironment{joincode}%
+  {\let\orighscode=\hscode
+   \let\origendhscode=\endhscode
+   \def\endhscode{\def\hscode{\endgroup\def\@currenvir{hscode}\\}\begingroup}
+   %\let\SaveRestoreHook=\empty
+   %\let\ColumnHook=\empty
+   %\let\resethooks=\empty
+   \orighscode\def\hscode{\endgroup\def\@currenvir{hscode}}}%
+  {\origendhscode
+   \global\let\hscode=\orighscode
+   \global\let\endhscode=\origendhscode}%
+
+\makeatother
+\EndFmtInput
+%
+
+\usepackage{multicol}
+
+% Math
+\usepackage{amssymb}
+% Tables
+\usepackage{amsmath}
+
+\usepackage{minted}
+
+% Colors
+\usepackage{xcolor, color, colortbl}
+\colorlet{gray}{gray!70}
+\colorlet{green}{green!50}
+\definecolor{darkblue}{HTML}{1D577A}
+\definecolor{rred}{HTML}{C03425}
+\definecolor{darkgreen}{HTML}{8BB523}
+\definecolor{ppurple}{HTML}{6B1B7F}
+\definecolor{pblack}{HTML}{000000}
+\definecolor{darkyellow}{HTML}{C0B225}
+
+% Links
+\usepackage{hyperref}
+\definecolor{linkcolour}{rgb}{0,0.2,0.6}
+\hypersetup{colorlinks,breaklinks,urlcolor=linkcolour,linkcolor=linkcolour,citecolor=blue}
+
+% Geometry
+%\usepackage{titling}
+%\setlength{\droptitle}{-7em}
+
+\title{Experimentation Project: Safer Shell Scripts Using Dependent Types}
+\author{Cas van der Rest}
+\date{November 2018}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Little safety is provided when executing third party shell scripts. Usually there is no way to know anything about the effects of a script on a system without thorough inspection of its contents, a task 
+that is preferably avoided: it is cumbersome at best, and realistically unfeasible in many cases. Furthermore, a script is often executed with much more \textit{capabilities} than it needs. In the context 
+of a shell, a script usually receives whatever authority the user that executes it has on the system, a concept known as \textit{ambient authority}. Depending on the role of the user this in itself can be 
+problematic, were it not for the fact that it is not uncommon for a user to execute scripts with root privileges in case the script needs to modify something that is outside the user's authority. 
+
+Execution of a script from an outside source would proceed with much more confidence if it would provide some kind of metadata describing its effects, in a format that is easy for a user to inspect. Of 
+course, this only works if we know that a script will not act outside what is described in its metadata.
+
+In this project, I have attempted to provide a solution that mitigates these issues by embedding a small subset of Bash into Idris\cite{brady13}, utilizing its dependent type system to model a script's 
+behaviour, and statically enforce that the claims made by a script are respected. 
+
+\section{Related Work}
+
+The approach taken in the project is largely based on \textit{Shill}\cite{moore14}, a scripting language developed at Harvard University. Shill is based around the \textit{principle of least privilege} (a script should have no more authority than it strictly needs), and takes a sanbox-based approach to enforcing this principle. 
+
+Every Shill script comes with a contract, describing the \textit{capabilities} of script; i.e. the resources it requires to run. The sandbox will only allow a script access to resources that are part of it's capabilities. Similarly, native shell commands that are called from a Shill script are also executed in the sanbox, and thus are restricted in the same way. 
+
+An example contract of a script taking one input parameter (called $input\_file$ ) could be: 
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{provide}\mathbin{:}{}\<[E]%
+\\
+\>[B]{}\hsindent{9}{}\<[9]%
+\>[9]{}\{\mskip1.5mu \Varid{input\char95 file}\mathbin{:}\Varid{is\char95 file}\;\Varid{land}\;\Varid{writable}\mskip1.5mu\}\to \Conid{Void}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Proclaiming that the input parameter should refer to an existing file, and that the script will need write permissions on that file. Shill contracts consist of a precondition and a return type. An example of a script that could utilize the above contract is: 
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{if}\;\Varid{is\char95 file}\;(\Varid{input\char95 file})\mathrel{\wedge}\Varid{has\char95 ext}\;(\Varid{input\char95 file},\text{\ttfamily \char34 jpg\char34})\;\mathbf{then}{}\<[E]%
+\\
+\>[B]{}\hsindent{9}{}\<[9]%
+\>[9]{}\Varid{append}\;(\text{\ttfamily \char34 Hello,~World!\char34},\Varid{path}\;(\Varid{input\char95 file}));{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Although Shill's API provides the necessary tools to specify fine-grained authority for scripts, all enforcement of contracts happens dynamically. This comes with the obvious downside of how to deal with scripts that fail dynamically halfway through their execution. Preferably we would deal with this scenario by preventing scripts that violate their contract from executing at all!
+
+\section{Project Scope}
+
+Bash is a \textit{very} elaborate shell, and to try to capture all its nuances in this project is clearly not a reasonable objective. 
+
+At the very least, we would like to cover some very basic scenarios where scripts try to access files and/or directories. An example of such a script would be: 
+
+\begin{minted}[escapeinside=|,mathescape=true]{bash}
+ls /home/cas 
+cat /etc/shadow 
+\end{minted}
+
+The corresponding Shill contract would look something like the following: 
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{provide}\mathbin{:}{}\<[E]%
+\\
+\>[B]{}\hsindent{9}{}\<[9]%
+\>[9]{}\{\mskip1.5mu {}\<[12]%
+\>[12]{}\text{\ttfamily \char34 /home/cas\char34}\mathbin{:}\Varid{is\char95 dir}\mathrel{\wedge}\Varid{readable}{}\<[E]%
+\\
+\>[B]{}\hsindent{9}{}\<[9]%
+\>[9]{},{}\<[12]%
+\>[12]{}\text{\ttfamily \char34 /etc/shadow\char34}\mathbin{:}\Varid{is\char95 file}\mathrel{\wedge}\Varid{readable}{}\<[E]%
+\\
+\>[B]{}\hsindent{9}{}\<[9]%
+\>[9]{}\mskip1.5mu\}\to \Conid{Void}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+We can identify several properties of files and directories we would like to be able to specify and assert by means of a precondition. Most notably whether a resource is an existing file or directory and if a user has certain authority over that resource. 
+
+Merely a precondition is obviously not sufficient to specify more complex behaviour. In particular, dependencies between different parts of the script can be hard to capture. Consider the following snippet: 
+
+\begin{minted}{bash}
+touch file.txt 
+cat file.txt
+\end{minted}
+
+The \texttt{touch} command does not care whether \textit{file.txt} already exists, but \texttt{cat} fails in that case. However, requiring that \textit{file.txt} exists makes the precondition to strong; a successful execution of \texttt{touch file.txt} guarantees that \textit{file.txt} exists when we arrive at the \texttt{cat} statement. 
+
+\subsection{Command Line Options}
+The behaviour of a command (and by extension the required parameters and return type) often depends on the various flags and options that were specified. Invoking the \texttt{man} command for any of the more common commands reveals a vast array of possibilities. To circumvent the problems this implies for a formalization of a command's behaviour, we assume a simplified model in which any single command is assumed to have a fixed set of parameters and return type. 
+
+\subsection{File System}
+
+\section{Implementation}
+
+\subsection{Filesystem}
+
+In order to reason about the effects of a command on a filesystem, we need some kind of abstract representation. The chosen representation is a rose tree with an additional constructor for leafs, in order to be able to distinguish between files (leafs of the tree) and empty directories (nodes with no children). Both nodes and leafs contain metadata of that particular vertex, including permissions, name and the type (file or directory). The contents of a file are not recorded. 
+
+This results in the following datatype definition: 
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{14E}{@{}l@{}}%
+\column{18}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{49}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{data}\;\Conid{FSTree}{}\<[14]%
+\>[14]{}\mathrel{=}{}\<[14E]%
+\>[18]{}\Conid{FSNode}\;\Conid{FileInfo}\;(\Conid{List}\;\Conid{FSTree}){}\<[49]%
+\>[49]{}\mbox{\onelinecomment  Directories}{}\<[E]%
+\\
+\>[14]{}\mid {}\<[14E]%
+\>[18]{}\Conid{FSLeaf}\;\Conid{FileInfo}{}\<[49]%
+\>[49]{}\mbox{\onelinecomment  Files}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+It should be obvious that leafs are only meant to contain files, and nodes are supposed to contain directories. 
+
+\subsection{Predicates}
+
+The programmer may use standard predicate logic to express a commands behaviour. As discussed before, this by no means enough to capture all the intricacies of script's behaviour, but we should at least be able to rule out certain errors by defining a sufficiently strong precondition. 
+
+\subsubsection{Embedding of Predicate Logic}
+
+Propositions are commonly defined as a type, and justified by supplying a definition that inhabits said type. Converting a formula in predicate logic to its corresponding type is relatively straightforward. I assume the following mapping: 
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{41}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{48}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{true}\;{}\<[41]%
+\>[41]{}\simeq\;{}\<[48]%
+\>[48]{}(){}\<[E]%
+\\
+\>[B]{}\Varid{false}\;{}\<[41]%
+\>[41]{}\simeq\;{}\<[48]%
+\>[48]{}\bot\;(\Conid{Void}){}\<[E]%
+\\
+\>[B]{}\Conid{P}\mathrel{\wedge}\Conid{Q}\;{}\<[41]%
+\>[41]{}\simeq\;{}\<[48]%
+\>[48]{}(\Conid{P},\Conid{Q}){}\<[E]%
+\\
+\>[B]{}\Conid{P}\mathrel{\vee}\Conid{Q}\;{}\<[41]%
+\>[41]{}\simeq\;{}\<[48]%
+\>[48]{}\Conid{Either}\;\Conid{P}\;\Conid{Q}{}\<[E]%
+\\
+\>[B]{}\Conid{P}\;\Rightarrow\;\Conid{Q}\;{}\<[17]%
+\>[17]{}\simeq\;{}\<[24]%
+\>[24]{}\Conid{P}\to \Conid{Q}{}\<[E]%
+\\
+\>[B]{}\forall\;\Varid{x}\mathbin{:}\Conid{P}\;\Varid{x}\;{}\<[17]%
+\>[17]{}\simeq\;{}\<[24]%
+\>[24]{}\{\mskip1.5mu \Varid{a}\mathbin{:}\Varid{x}\mskip1.5mu\}\to \Conid{P}\;\Varid{a}{}\<[E]%
+\\
+\>[B]{}\exists\;\Varid{x}\mathbin{:}\Conid{P}\;\Varid{x}\;{}\<[17]%
+\>[17]{}\simeq\;{}\<[24]%
+\>[24]{}\Sigma\;(\Varid{x}\mathbin{:}\Conid{A},\Conid{P}\;(\Varid{x})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Sigma types are modelled as dependent pairs in Idris. For convinience, the infix constructor \texttt{><} is used in place of \texttt{DPair}. A value of type \texttt{(A >< P)} is constructed using \texttt{**}, e.g. \texttt{(value ** proof)}. 
+
+A deep embedding exists for predicates in order to allow for easier manipulation of predicates, and more readable code. For example, consider the precondition of two subsequent \texttt{echo} commands:
+
+\begin{equation*}
+true \land (\forall (x:String):true \land (\forall (y:String):true)) 
+\end{equation*}
+
+This corresponds to the following type:
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}((),\{\mskip1.5mu \Varid{x}\mathbin{:}\Conid{String}\mskip1.5mu\}\to ((),\{\mskip1.5mu \Varid{y}\mathbin{:}\Conid{String}\mskip1.5mu\}\to ())){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Using a deep embedding for predicates, we can simply write: 
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}[\mskip1.5mu [\mskip1.5mu \mathinner{\ldotp\ldotp}\mskip1.5mu]\mskip1.5mu]\;\Conid{T}\mathrel{\wedge}(\Conid{Forall}\;\Conid{String}\;(\lambda \Varid{x}\Rightarrow \Conid{T}\mathrel{\wedge}\Conid{Forall}\;\Conid{String}\;(\lambda \Varid{y}\Rightarrow \Conid{T}))){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Both expressions yield the same value, and are interchangeable. Similar syntax could be defined for writing inhabitants, but this is unfortunately not so easy, as we would need a way to convert \texttt{Forall x P} to \texttt{$\lambda$s=>P}, where every free occurence of \texttt{x} in \texttt{P} is bound by the lambda abstraction. 
+
+\subsubsection{Atomic Predicates}
+
+A couple of atomic predicates are provided for the user to make assembling the precondition easier. Most notably, proving that a file exists 
+
+\subsection{Shallow Embedding Using Control.ST}
+
+\subsection{HoareState}
+
+\subsection{Free Monads}
+
+\section{Conclusion}
+
+\section{Future Work}
+Finish the report
+
+\begin{thebibliography}{99}
+\bibitem{moore14}
+Moore, S., Dimoulas, C., King, D., \& Chong, S. (2014, October). SHILL: A Secure Shell Scripting Language. In OSDI (pp. 183-199).
+
+\bibitem{brady13}
+Brady, E. (2013). Idris, a general-purpose dependently typed programming language: Design and implementation. Journal of Functional Programming, 23(5), 552-593.
+
+\bibitem{saltzer74}
+Saltzer, J. H. (1974). Protection and the control of information sharing in Multics. Communications of the ACM, 17(7), 388-402.
+
+\bibitem{krohn05}
+Krohn, M. N., Efstathopoulos, P., Frey, C., Kaashoek, M. F., Kohler, E., Mazieres, D., ... \& Ziegler, D. (2005, June). Make Least Privilege a Right (Not a Privilege). In HotOS.
+
+\end{thebibliography}
+
+\end{document}

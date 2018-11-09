@@ -1,0 +1,15 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{Related Work}{}% 2
+\BOOKMARK [1][-]{section.3}{Project Scope}{}% 3
+\BOOKMARK [2][-]{subsection.3.1}{Command Line Options}{section.3}% 4
+\BOOKMARK [2][-]{subsection.3.2}{File System}{section.3}% 5
+\BOOKMARK [1][-]{section.4}{Implementation}{}% 6
+\BOOKMARK [2][-]{subsection.4.1}{Filesystem}{section.4}% 7
+\BOOKMARK [2][-]{subsection.4.2}{Predicates}{section.4}% 8
+\BOOKMARK [3][-]{subsubsection.4.2.1}{Embedding of Predicate Logic}{subsection.4.2}% 9
+\BOOKMARK [3][-]{subsubsection.4.2.2}{Atomic Predicates}{subsection.4.2}% 10
+\BOOKMARK [2][-]{subsection.4.3}{Shallow Embedding Using Control.ST}{section.4}% 11
+\BOOKMARK [2][-]{subsection.4.4}{HoareState}{section.4}% 12
+\BOOKMARK [2][-]{subsection.4.5}{Free Monads}{section.4}% 13
+\BOOKMARK [1][-]{section.5}{Conclusion}{}% 14
+\BOOKMARK [1][-]{section.6}{Future Work}{}% 15
