@@ -64,9 +64,23 @@ implementation Functor Cmd where
 pathExists : (p : Path) -> (fs : FSTree) -> Type
 pathExists p fs = FSElem p fs
 
-typeIs : FType -> FSElem p fs -> Type
+total
+fileFromProof : FSElem p fs -> FileInfo
+fileFromProof {fs = (FSNode x xs)} HereDir = x
+fileFromProof {fs = (FSLeaf (MkFileInfo n1 md))} 
+              (HereFile Refl) = MkFileInfo n1 md
+fileFromProof {fs = (FSNode (MkFileInfo n md) ys)} 
+              (ThereDir x y z n) = fileFromProof y
+fileFromProof {fs = (FSNode (MkFileInfo n md) ys)} 
+              (ThereFile y z w n) = fileFromProof z
 
-hasType : (p : Path) -> (t : FType) -> (fs : FSTree) -> FSElem p fs >< typeIs t
+total
+typeIs : FType -> FSElem p fs -> Type
+typeIs ft prf = getFType (fileFromProof prf) = ft
+
+total
+hasType : (p : Path) -> (t : FType) -> (fs : FSTree) -> Type
+hasType p ft fs = FSElem p fs >< typeIs ft
   
 data CmdF : Type -> Type where
   Bind : Cmd (CmdF a) -> CmdF a
@@ -108,7 +122,7 @@ pre : CmdF a -> Predicate FSTree
 pre (Bind cmd) =
   case cmd of 
     (Ls p cmd) => (Atom $ pathExists p) /\ Forall (List Path) (\lst => pre (cmd lst))
-    (Cat p cmd) => (Atom $ pathExists p) /\ Forall String (\str => pre (cmd str))
+    (Cat p cmd) => (Atom $ pathExists p) /\ (Atom $ hasType p F_) /\ Forall String (\str => pre (cmd str))
     (Echo s cmd) => Forall String (\str => pre (cmd str))
     Return => T
 pre (Pure _) = T

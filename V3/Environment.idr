@@ -156,6 +156,9 @@ implementation DecEq FileMD where
 data FileInfo : Type where
   MkFileInfo : (name : Name) -> (md : FileMD) -> FileInfo
   
+getFType : FileInfo -> FType 
+getFType (MkFileInfo name (MkFileMD t p u)) = t
+  
 implementation Eq FileInfo where 
   (MkFileInfo name md) == (MkFileInfo x y) = name == x && md == y
   

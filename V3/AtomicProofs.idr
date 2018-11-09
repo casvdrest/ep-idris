@@ -430,4 +430,9 @@ mutual
   lemma_file_conv {ys} {rec} {fs} {leneq} elem 
                  with (lemma_lift_elem {xs=ys} {ys=rec} (sym leneq) elem) 
     lemma_file_conv {ys = ys} {rec = rec} {fs = fs} elem | (x ** pf) = 
-      (x ** (pf, believe_me ()))
+      (x ** (pf, believe_me ())) 
+ 
+export total     
+provePathHasType : (p : Path) -> (ft : FType) -> (prf : FSElem p fs) -> Dec (typeIs ft prf)
+provePathHasType p ft prf = decEq (getFType $ fileFromProof prf) ft
+ 
