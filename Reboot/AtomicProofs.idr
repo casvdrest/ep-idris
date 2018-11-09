@@ -137,33 +137,28 @@ fs_from_rec : {p : Path} -> {ys : List FSTree} ->
 fs_from_rec (Left (x ** pf)) = snd x
 fs_from_rec (Right r) = fst r
 
-lemma_lift_elem : {xs : List FSTree} -> 
-                  {ys : List (Either (((Path, FSTree) >< rec_prf_ty xs (DirPath ns)))
-                                     (FSTree  >< rec_contra_ty xs (DirPath ns)))} -> 
-                   length xs = length ys -> 
-                   Elem fs xs -> ((Either (((Path, FSTree) >< rec_prf_ty xs (DirPath ns)))
-                                 (FSTree  >< rec_contra_ty xs (DirPath ns))) 
-                                   >< (\rval => (Elem rval ys, fs = fs_from_rec rval)))
-lemma_lift_elem {xs} {ys} prf elem = ?asshole
+lemma_lift_elem : {xs : List a} -> {ys : List b} -> length xs = length ys 
+                                -> Elem x xs 
+                                -> b >< (\y => Elem y ys)
+lemma_lift_elem prf Here = ?hole_lift_elem_1
+lemma_lift_elem prf (There later) = ?hole_lift_elem_2
+                  
 
 ||| Recursively search for proof on a list of FileSystem trees
 total
 recurse : {xs : List FSTree} -> (p : Path)
                              -> (lst : List (FSTree >< (\x => Elem x xs))) 
-  -> ((p : Path) -> (fs : FSTree) 
+                             -> ((p : Path) -> (fs : FSTree) 
                                             -> Dec (FSElem p fs))
                              -> List (Either (((Path, FSTree) >< rec_prf_ty xs p))
                                                (FSTree >< rec_contra_ty xs p))
-recurse _ [] _ = []
-recurse p ((x ** prf) :: xs) f with (f p x)
-  
-  -- The child does not contain the path, so we return nothing
-  recurse p ((x ** prf) :: xs) f | No contra = 
-    Right (x ** (contra, prf)) :: recurse p xs f
-     
-   -- Child contains the path, yield appropriate proof
-  recurse p ((x ** prf) :: xs) f | (Yes y) = 
-    Left ((p, x) ** ((y, prf), Refl)) :: recurse p xs f 
+recurse {xs} p lst f = map g lst
+  where g : (FSTree >< \x => Elem x xs) -> Either (((Path, FSTree) >< rec_prf_ty xs p))
+                                                  (FSTree >< rec_contra_ty xs p)
+        g (y ** prf) = 
+          case f p y of 
+            (Yes pf) => Left ((p, y) ** ((pf, prf), Refl))
+            (No contra) => Right (y ** (contra, prf))
                
 to_contra : {ys : List FSTree} -> 
             {zs : List (Either (DPair (Path, FSTree) (rec_prf_ty ys (DirPath xs))) 
@@ -303,6 +298,4 @@ mutual
                          >< (\rval => (Elem rval rec, fs = fs_from_rec rval)))
   lemma_dir_conv {ys} {rec} {fs} {leneq} elem 
                  with (lemma_lift_elem {xs=ys} {ys=rec} (sym leneq) elem) 
-    lemma_dir_conv {ys} {rec} {fs} elem | res = res
- 
- 
+    lemma_dir_conv {ys = ys} {rec = rec} {fs = fs} elem | (x ** pf) = (x ** (pf, ?hole))
