@@ -46,12 +46,12 @@ O : Bool
 O = False
 
 ||| Get relevant state. This is just a dummy, but since we cannot compile anyways
-||| it doesn't really make sense to implement this anyway. 
+||| it doesn't really make sense to implement this anyway.
 getState : CmdExec m => m (FSTree, User)
-getState = pure ((FSLeaf (MkFileInfo "file1.txt" 
+getState = pure ((FSLeaf (MkFileInfo "file1.txt"
   (MkFileMD F_ [[I,I,I], [I,I,I], [O,O,O]] (U "cas" "user")))), (U "cas" "user"))
 
-||| Run a script, given a function that asserts its precondition (by 
+||| Run a script, given a function that asserts its precondition (by
 ||| giving a proof that it holds, or Nothing)
 run : (CmdExec m, Throwable m) =>
       (script : CmdF r) -> ((st : (FSTree, User))
@@ -62,7 +62,7 @@ run script check = do
     Nothing => throw "Precondition check failed ..."
     (Just x) => cmdExec script
 
-||| Proves that the precondition of the `echo1` script holds (trivial) 
+||| Proves that the precondition of the `echo1` script holds (trivial)
 proveEcho1 : (fs : FSTree) -> Maybe (([[. FSTree .]] (
                                 Forall String (\_ =>
                                   Forall String (\_ => T)
@@ -81,8 +81,8 @@ proveCat1 : (st : (FSTree, User)) -> Maybe (([[. (FSTree, User) .]]
 proveCat1 (fs, u) with (provePathExists (FilePath [] "file1.txt") fs)
   proveCat1 (fs, u) | (Yes prf1) =
     case provePathHasType (FilePath [] "file1.txt") F_ prf1 of
-      (Yes prf2) => 
-        case proveModAllowed (FilePath [] "file1.txt") R u prf1 of 
+      (Yes prf2) =>
+        case proveModAllowed (FilePath [] "file1.txt") R u prf1 of
           (Yes prf3) => Just (((prf1, (prf1 ** prf2)), (prf1 ** prf3)), const ())
           (No contra) => Nothing
       (No contra) => Nothing
@@ -93,32 +93,36 @@ cat1 : CmdF ()
 cat1 = do
   cat (FilePath [] "file1.txt")
   done ()
-  
+
+||| Do a cat command twice on the input path
 catTwice : Path -> CmdF String
-catTwice p = do 
+catTwice p = do
   x <- cat p
   y <- cat p
   done (x ++ y)
-  
+
+||| A script combining multiple commands
 combined : CmdF ()
-combined = do 
+combined = do
   ls (DirPath ["example", "path"])
   str <- catTwice (FilePath ["example", "path"] "file1.txt")
   echo str
   done ()
-  
+
+||| Dec to Maybe (throw away the contra)
 asMaybe : Dec a -> Maybe a
 asMaybe (Yes x) = Just x
-asMaybe _       = Nothing  
+asMaybe _       = Nothing
 
 syntax "??" [dec] = asMaybe dec
-  
-proveCombined : (st : (FSTree, User)) -> Maybe (([[. (FSTree, User) .]] 
+
+||| Prove the precondition of the `combined` script
+proveCombined : (st : (FSTree, User)) -> Maybe (([[. (FSTree, User) .]]
                     (Atom $ pathExists (DirPath ["example", "path"])) /\
                     (Atom $ hasType (DirPath ["example", "path"]) D_) /\
                     (Atom $ hasAuthority (DirPath ["example", "path"]) R) /\
-                    Forall (List Path) (\_ => 
-                      (Atom $ pathExists (FilePath ["example", "path"] "file1.txt")) /\ 
+                    Forall (List Path) (\_ =>
+                      (Atom $ pathExists (FilePath ["example", "path"] "file1.txt")) /\
                       (Atom $ hasType (FilePath ["example", "path"] "file1.txt") F_) /\
                       (Atom $ hasAuthority (FilePath ["example", "path"] "file1.txt") R) /\
                       Forall String (\_ =>
@@ -129,21 +133,21 @@ proveCombined : (st : (FSTree, User)) -> Maybe (([[. (FSTree, User) .]]
                       )
                     )
                 ) st)
-proveCombined (fs, u) = do 
+proveCombined (fs, u) = do
  -- Proofs over the first path
  ext1 <- ?? provePathExists (DirPath ["example", "path"]) fs
  fty1 <- ?? provePathHasType (DirPath ["example", "path"]) D_ ext1
  aut1 <- ?? proveModAllowed (DirPath ["example", "path"]) R u ext1
- 
- --Proofs over the second path 
+
+ --Proofs over the second path
  ext2 <- ?? provePathExists (FilePath ["example", "path"] "file1.txt") fs
  fty2 <- ?? provePathHasType (FilePath ["example", "path"] "file1.txt") F_ ext2
  aut2 <- ?? proveModAllowed (FilePath ["example", "path"] "file1.txt") R u ext2
- 
+
  -- Assemble proofs into final result
  pure (
-   ((ext1, (ext1 ** fty1)), (ext1 ** aut1)), 
-   const (((ext2, (ext2 ** fty2)), (ext2 ** aut2)), 
+   ((ext1, (ext1 ** fty1)), (ext1 ** aut1)),
+   const (((ext2, (ext2 ** fty2)), (ext2 ** aut2)),
      const (
        ((ext2, (ext2 ** fty2)), (ext2 ** aut2)),
      const ())
