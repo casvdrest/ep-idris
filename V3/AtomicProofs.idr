@@ -3,52 +3,8 @@ module AtomicProofs
 import Environment
 import Data.So
 import Data.List
+import Data.List.Quantifiers
 import Syntax
-
---------------------------------------------------------------------------------
--- Existential proofs for lists. Taken from Data.Vect.Quantifiers and adapted
--- for usage with lists instead of vectors. 
---------------------------------------------------------------------------------
-
-||| A proof that some element of a vector satisfies some property
-|||
-||| @ P the property to be satsified
-data Any : (P : a -> Type) -> List a -> Type where
-  ||| A proof that the satisfying element is the first one in the `Vect`
-  Here  : {P : a -> Type} -> {xs : List a} -> P x -> Any P (x :: xs)
-  
-  ||| A proof that the satsifying element is in the tail of the `Vect`
-  There : {P : a -> Type} -> {xs : List a} -> Any P xs -> Any P (x :: xs)
-
-||| No element of an empty vector satisfies any property
-anyNilAbsurd : {P : a -> Type} -> Any P [] -> Void
-anyNilAbsurd (Here _) impossible
-anyNilAbsurd (There _) impossible  
-  
-implementation Uninhabited (Any p Nil) where
-  uninhabited = anyNilAbsurd
-
-||| Eliminator for `Any`
-anyElim : {xs : List a} -> {P : a -> Type} -> (Any P xs -> b) 
-                        -> (P x -> b) -> Any P (x :: xs) -> b
-anyElim _ f (Here p) = f p
-anyElim f _ (There p) = f p
-
-||| Given a decision procedure for a property, determine if an element of a
-||| vector satisfies it.
-|||
-||| @ P the property to be satisfied
-||| @ dec the decision procedure
-||| @ xs the vector to examine
-total
-any' : {P : a -> Type} -> (dec : (x : a) -> Dec (P x)) -> (xs : List a) -> Dec (Any P xs)
-any' _ Nil = No anyNilAbsurd
-any' p (x::xs) with (p x)
-  | Yes prf = Yes (Here prf)
-  | No prf =
-    case any' p xs of
-      Yes prf' => Yes (There prf')
-      No prf' => No (anyElim prf' prf)
 
 --------------------------------------------------------------------------------
 -- Helper functions for dealing with `Any` and `Elem` proofs
@@ -298,7 +254,7 @@ mutual
     provePathExists (FilePath (name :: xs) x) 
                     (FSNode (MkFileInfo name md) ys) 
                       | (Yes Refl) = assert_total $
-      case any' {P=isLeft} decideLeft (map (g {p=(FilePath xs x)} 
+      case any {P=isLeft} decideLeft (map (g {p=(FilePath xs x)} 
            provePathExists) (elemProofs ys)) of
          (Yes prf) =>  
            case valueFromAny prf of 
@@ -347,7 +303,7 @@ mutual
     provePathExists (DirPath (name :: xs)) 
                     (FSNode (MkFileInfo name md) ys) 
                       | (Yes Refl) = assert_total $ 
-      case any' {P=isLeft} decideLeft (map (g {p=(DirPath xs)} 
+      case any {P=isLeft} decideLeft (map (g {p=(DirPath xs)} 
            provePathExists) (elemProofs ys)) of
          (Yes prf) =>  
            case valueFromAny prf of 
