@@ -1,3 +1,7 @@
+||| Contains code that enables the programmer to execute a script in the 
+||| IO monad. Commands are translated to their respective shell commands, and 
+||| invoked on the actual command line. Results are read back from stdout, 
+||| parsed and returned. 
 module CmdIO
 
 import Environment
@@ -10,10 +14,14 @@ import Data.HVect
 
 %access public export
 
+||| If it is a Right, return the value, otherwise
+||| return the default value. 
 fromRight : b -> Either a b -> b
 fromRight def (Left l) = def
 fromRight def (Right r) = r
 
+||| Read command output. Taken from 
+||| https://stackoverflow.com/questions/39812465/how-can-i-call-a-subprocess-in-idris 
 readFileH : (fileHandle : File) -> IO String
 readFileH h = loop ""
   where
@@ -23,14 +31,18 @@ readFileH h = loop ""
         Right l <- fGetLine h | Left err => pure acc
         loop (acc ++ l)
 
+||| Execute a command and read its output. Taken from
+||| https://stackoverflow.com/questions/39812465/how-can-i-call-a-subprocess-in-idris
 execAndReadOutput : (cmd : String) -> IO String
 execAndReadOutput cmd = do
   Right fh <- popen cmd Read | Left err => pure ""
   contents <- readFileH fh
   pclose fh
   pure contents
-  
-interface IOExec (f : Type -> Type) where 
+
+||| Provides the necessary information about a datatype
+||| to be able to execute it. 
+interface Exec (f : Type -> Type) where 
   argc : f a -> Nat
   inTypes : (inh : f a) -> Vect (argc inh) Type 
   outType : f a -> Maybe Type 
@@ -39,7 +51,8 @@ interface IOExec (f : Type -> Type) where
   getParams : (inh : f a) -> HVect (inTypes inh)
   getF : (inh : f a) -> Either String (fromMaybe Unit (outType inh) -> a)
                
-implementation IOExec Cmd where 
+||| Provide execution information for the Cmd type. 
+implementation Exec Cmd where 
   argc (Ls x f) = 1
   argc (Cat x f) = 1
   argc (Echo x f) = 1
@@ -75,7 +88,8 @@ implementation IOExec Cmd where
   getF (Echo x f) = Right f
   getF Return = Left "No continuation for Return"
   
-implIO : CmdF a  -> IO ()
+||| Describes how to execute a command in the IO monad
+implIO : CmdF a -> IO ()
 implIO (Pure x) = pure ()
 implIO (Bind cmd) = do
   output_raw <- exec cmd (getParams cmd)
@@ -85,7 +99,8 @@ implIO (Bind cmd) = do
          p <- getParse cmd output_raw
          pure $ (implIO (f p))
     )
-    
+
+||| Commands can be executed in the IO monad. 
 implementation CmdExec IO where 
   cmdExec = implIO
 

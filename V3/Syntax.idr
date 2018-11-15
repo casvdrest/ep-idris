@@ -133,7 +133,9 @@ total
 pre : CmdF a -> Predicate (FSTree, User) 
 pre (Bind cmd) =
   case cmd of 
-    (Ls p cmd) => (Atom $ pathExists p) /\ 
+    (Ls p cmd) => (Atom $ pathExists p) /\
+                  (Atom $ hasType p D_) /\
+                  (Atom $ hasAuthority p R) /\
                   Forall (List Path) (\lst => pre (cmd lst))
     (Cat p cmd) => (Atom $ pathExists p) /\ 
                    (Atom $ hasType p F_) /\ 
