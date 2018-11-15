@@ -40,16 +40,16 @@ implementation Throwable IO where
   throw = putStrLn
 
 ||| get file structure
-getFS : CmdExec m => m FSTree
-getFS = pure (FSLeaf (MkFileInfo "file1.txt" 
-  (MkFileMD F_ [[I,I,I], [I,I,I], [O,O,O]] (U "cas" "user"))))
+getState : CmdExec m => m (FSTree, User)
+getState = pure ((FSLeaf (MkFileInfo "file1.txt" 
+  (MkFileMD F_ [[I,I,I], [I,I,I], [O,O,O]] (U "cas" "user")))), (U "cas" "user"))
 
 run : (CmdExec m, Throwable m) =>
-      (script : CmdF r) -> ((fs : FSTree)
-                        -> Maybe (([[..]] (pre script)) fs)) -> m ()
+      (script : CmdF r) -> ((st : (FSTree, User))
+                        -> Maybe (([[..]] (pre script)) st)) -> m ()
 run script check = do
-  fs <- getFS
-  case check fs of
+  st <- getState
+  case check st of
     Nothing => throw "Precondition check failed ..."
     (Just x) => cmdExec script
 
@@ -61,16 +61,20 @@ proveEcho1 : (fs : FSTree) -> Maybe (([[. FSTree .]] (
 proveEcho1 _ = Just $ (const (const ()))
 
 total
-proveCat1 : (fs : FSTree) -> Maybe (([[. FSTree .]]
+proveCat1 : (st : (FSTree, User)) -> Maybe (([[. (FSTree, User) .]]
   ((Atom $ pathExists (FilePath [] "file1.txt"))  /\
    (Atom $ hasType (FilePath [] "file1.txt" ) F_) /\
-   (Forall String (const T)))) fs)
-proveCat1 fs with (provePathExists (FilePath [] "file1.txt") fs)
-  proveCat1 fs | (Yes prf1) =
+   (Atom $ hasAuthority (FilePath [] "file1.txt") R) /\
+   (Forall String (const T)))) st)
+proveCat1 (fs, u) with (provePathExists (FilePath [] "file1.txt") fs)
+  proveCat1 (fs, u) | (Yes prf1) =
     case provePathHasType (FilePath [] "file1.txt") F_ prf1 of
-      (Yes prf2) => Just ((prf1, (prf1 ** prf2)), const ())
+      (Yes prf2) => 
+        case proveModAllowed (FilePath [] "file1.txt") R u prf1 of 
+          (Yes prf3) => Just (((prf1, (prf1 ** prf2)), (prf1 ** prf3)), const ())
+          (No contra) => Nothing
       (No contra) => Nothing
-  proveCat1 fs | (No contra) = Nothing
+  proveCat1 (fs, u) | (No contra) = Nothing
 
 cat1 : CmdF ()
 cat1 = do
@@ -78,10 +82,4 @@ cat1 = do
   pure ()
 
 main : IO ()
-main = run (echo "Hallo, Wereld!") (\_ => Just (const ()))
-
-is10 : Nat -> Type 
-is10 = [[..]] (Atom $ (\n => n = 10))
-
-prove10 : is10 10
-prove10 = Refl
+main = run cat1 proveCat1

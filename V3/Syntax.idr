@@ -61,8 +61,8 @@ implementation Functor Cmd where
   map f (Echo x g) = assert_total $ Echo x (\v => f (g v))
   map f Return = Return 
   
-pathExists : (p : Path) -> (fs : FSTree) -> Type
-pathExists p fs = FSElem p fs
+pathExists : (p : Path) -> (st : (FSTree, User)) -> Type
+pathExists p (fs, _) = FSElem p fs
 
 total
 fileFromProof : FSElem p fs -> FileInfo
@@ -79,8 +79,20 @@ typeIs : FType -> FSElem p fs -> Type
 typeIs ft prf = getFType (fileFromProof prf) = ft
 
 total
-hasType : (p : Path) -> (t : FType) -> (fs : FSTree) -> Type
-hasType p ft fs = FSElem p fs >< typeIs ft
+hasType : (p : Path) -> (t : FType) -> (st : (FSTree, User)) -> Type
+hasType p ft (fs, _) = FSElem p fs >< typeIs ft
+
+total
+getMD : FileInfo -> FileMD
+getMD (MkFileInfo n md) = md
+
+total
+checkAuth : (m : FMod) -> (u : User) -> FSElem p fs -> Type 
+checkAuth m u prf = So (modAllowed m u (getMD (fileFromProof prf)))
+
+total
+hasAuthority : (p : Path) -> (m : FMod) -> (st : (FSTree, User)) -> Type
+hasAuthority p m (fs, u) = FSElem p fs >< checkAuth m u
   
 data CmdF : Type -> Type where
   Bind : Cmd (CmdF a) -> CmdF a
@@ -118,19 +130,18 @@ liftF m = Bind (map Pure m)
 f >> g = f >>= const g
 
 total
-pre : CmdF a -> Predicate FSTree 
+pre : CmdF a -> Predicate (FSTree, User) 
 pre (Bind cmd) =
   case cmd of 
-    (Ls p cmd) => (Atom $ pathExists p) /\ Forall (List Path) (\lst => pre (cmd lst))
-    (Cat p cmd) => (Atom $ pathExists p) /\ (Atom $ hasType p F_) /\ Forall String (\str => pre (cmd str))
+    (Ls p cmd) => (Atom $ pathExists p) /\ 
+                  Forall (List Path) (\lst => pre (cmd lst))
+    (Cat p cmd) => (Atom $ pathExists p) /\ 
+                   (Atom $ hasType p F_) /\ 
+                   (Atom $ hasAuthority p R) /\ 
+                   Forall String (\str => pre (cmd str))
     (Echo s cmd) => Forall String (\str => pre (cmd str))
     Return => T
 pre (Pure _) = T
 
 interface Monad m  => CmdExec (m : Type -> Type) where 
   cmdExec : CmdF a -> m ()
-
-
--- Local Variables:
--- idris-load-packages: ("lightyear" "contrib")
--- End:

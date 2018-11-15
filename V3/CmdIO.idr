@@ -4,7 +4,6 @@ import Environment
 import System
 import Syntax
 import Free
-import GCurry
 import Parsers
 
 import Data.HVect

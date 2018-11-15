@@ -1,4 +1,5 @@
 ||| Contains an implementation for the free monad
+||| Taken from: https://github.com/idris-hackers/idris-free
 module Free
 
 %access public export

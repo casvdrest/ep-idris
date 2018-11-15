@@ -18,27 +18,67 @@
 \providecommand\HyField@AuxAddToCoFields[2]{}
 \citation{brady13}
 \citation{moore14}
+\citation{saltzer74}
 \@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}}
 \@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{1}{section.2}}
 \@writefile{toc}{\contentsline {section}{\numberline {3}Project Scope}{2}{section.3}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Command Line Options}{3}{subsection.3.1}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}File System}{3}{subsection.3.2}}
-\@writefile{toc}{\contentsline {section}{\numberline {4}Implementation}{3}{section.4}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Filesystem}{3}{subsection.4.1}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Predicates}{3}{subsection.4.2}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.1}Embedding of Predicates}{3}{subsubsection.4.2.1}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.2}Provided Atomic Predicates}{5}{subsubsection.4.2.2}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Codebase Overview}{3}{section.4}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Datatypes and Proofs}{4}{section.5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}File System}{4}{subsection.5.1}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.1}The File System Tree}{4}{subsubsection.5.1.1}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.2}File Metadata}{4}{subsubsection.5.1.2}}
+\citation{wadler15}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Predicates}{5}{subsection.5.2}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.1}Propositions in a Dependently Typed Language}{5}{subsubsection.5.2.1}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.2}Embedding of Predicates}{5}{subsubsection.5.2.2}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.3}Provided Atomic Predicates}{6}{subsubsection.5.2.3}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.4}Constructing Atomic Proofs}{7}{subsubsection.5.2.4}}
+\citation{github}
+\citation{brady16}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Implementation}{9}{section.6}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Shallow Embedding Using Control.ST}{9}{subsection.6.1}}
+\citation{controlst}
+\citation{swierstra09}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}The HoareState Monad}{10}{subsection.6.2}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.1}Definition of the HoareState Monad}{10}{subsubsection.6.2.1}}
+\citation{swierstra09b}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.2}The HoareState Monad in Idris}{11}{subsubsection.6.2.2}}
+\citation{hoare69}
+\citation{gonzalez12}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.2.3}Precondition Strengthening and Postcondition Weakening}{13}{subsubsection.6.2.3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Free Monads}{13}{subsection.6.3}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.1}Syntactical Definition of the Scripting Language}{14}{subsubsection.6.3.1}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.2}Function Totality}{15}{subsubsection.6.3.2}}
+\citation{abbott05}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.3.3}Running Shell Scripts}{16}{subsubsection.6.3.3}}
+\citation{loh14}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Expressivity}{19}{subsection.6.4}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Conclusion}{19}{section.7}}
+\citation{swierstra08}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Future Work}{20}{section.8}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Syntax Extensions using Functor Coproducts}{20}{subsection.8.1}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Shell Features}{21}{subsection.8.2}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {8.2.1}Control Flow}{21}{subsubsection.8.2.1}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {8.2.2}Command Line Options}{21}{subsubsection.8.2.2}}
 \bibcite{moore14}{1}
 \bibcite{brady13}{2}
 \bibcite{saltzer74}{3}
-\bibcite{krohn05}{4}
+\bibcite{github}{4}
+\bibcite{brady16}{5}
+\bibcite{swierstra09a}{6}
+\bibcite{abbott05}{7}
+\bibcite{swierstra09b}{8}
+\bibcite{controlst}{9}
+\bibcite{swierstra08}{10}
+\bibcite{loh14}{11}
+\bibcite{wadler15}{12}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {8.2.3}File Contents}{22}{subsubsection.8.2.3}}
+\bibcite{gonzalez12}{13}
+\bibcite{hoare69}{14}
 \gdef\minted@oldcachelist{,
   default-pyg-prefix.pygstyle,
   default.pygstyle,
-  75DE932DB123E5276D8DEC539D169CFCA732499B2FB83EDE646E2F6F1931898A.pygtex,
-  9D8E313A4D2D84C6D725579CD7471706EAD440A79C3E84ACDCEF803F7E227B29.pygtex}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Shallow Embedding Using Control.ST}{6}{subsection.4.3}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}HoareState}{6}{subsection.4.4}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Free Monads}{6}{subsection.4.5}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{6}{section.5}}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Future Work}{6}{section.6}}
+  A89495418E747EE714544AE34261BCC1EAD440A79C3E84ACDCEF803F7E227B29.pygtex,
+  D06A679F95BE6817F9A6BDB0487D811DEAD440A79C3E84ACDCEF803F7E227B29.pygtex,
+  5F9EAD79112502CF1F950865261BA7E3D056FA939DEE1CFB528B6798A1EED084.pygtex}

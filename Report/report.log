@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018/Arch Linux) (preloaded format=pdflatex 2018.10.29)  9 NOV 2018 16:05
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018/Arch Linux) (preloaded format=pdflatex 2018.10.29)  14 NOV 2018 17:53
 entering extended mode
  \write18 enabled.
  %&-line parsing enabled.
@@ -7,8 +7,8 @@ entering extended mode
 LaTeX2e <2018-04-01> patch level 5
 (/usr/share/texmf-dist/tex/latex/base/article.cls
 Document Class: article 2014/09/29 v1.4h Standard LaTeX document class
-(/usr/share/texmf-dist/tex/latex/base/size11.clo
-File: size11.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
+(/usr/share/texmf-dist/tex/latex/base/size12.clo
+File: size12.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
 )
 \c@part=\count80
 \c@section=\count81
@@ -542,12 +542,12 @@ LaTeX Font Info:    ... okay on input line 303.
 * \topmargin=-7.86334pt
 * \headheight=12.0pt
 * \headsep=25.0pt
-* \topskip=11.0pt
+* \topskip=12.0pt
 * \footskip=30.0pt
-* \marginparwidth=50.0pt
+* \marginparwidth=35.0pt
 * \marginparsep=10.0pt
 * \columnsep=10.0pt
-* \skip\footins=10.0pt plus 4.0pt minus 2.0pt
+* \skip\footins=10.8pt plus 4.0pt minus 2.0pt
 * \hoffset=0.0pt
 * \voffset=0.0pt
 * \mag=1000
@@ -611,73 +611,192 @@ LaTeX Font Info:    Try loading font information for U+stmry on input line 306.
 
  (./_minted-report/default-pyg-prefix.pygstyle)
 (./_minted-report/default.pygstyle)
-(./_minted-report/75DE932DB123E5276D8DEC539D169CFCA732499B2FB83EDE646E2F6F19318
-98A.pygtex)
+(./_minted-report/A89495418E747EE714544AE34261BCC1EAD440A79C3E84ACDCEF803F7E227
+B29.pygtex)
 \openout3 = `report.ptb'.
 
+ [2]
 \openout4 = `report.pyg'.
 
 
-(./_minted-report/9D8E313A4D2D84C6D725579CD7471706EAD440A79C3E84ACDCEF803F7E227
-B29.pygtex) [2]
-\openout3 = `report.ptb'.
+(./_minted-report/D06A679F95BE6817F9A6BDB0487D811DEAD440A79C3E84ACDCEF803F7E227
+B29.pygtex)
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 403.
 
+ (/usr/share/texmf-dist/tex/latex/base/omscmr.fd
+File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <12> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 403.
  [3]
 \openout3 = `report.ptb'.
 
 \openout3 = `report.ptb'.
 
-\openout3 = `report.ptb'.
-
-\openout3 = `report.ptb'.
-
-\openout3 = `report.ptb'.
-
-\openout3 = `report.ptb'.
-
  [4]
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 564.
+\openout3 = `report.ptb'.
 
- (/usr/share/texmf-dist/tex/latex/base/omscmr.fd
-File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
-)
-LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 564.
+ [5]
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
 \openout3 = `report.ptb'.
 
 
-[5]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 656.
- [6]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 656.
+[6]
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+ [7]
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+ [8]
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+ [9]
+
+LaTeX Warning: Citation `swierstra09' on page 10 undefined on input line 815.
+
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+[10]
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+ [11]
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+ [12]
+\openout3 = `report.ptb'.
+
+ [13]
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+ [14]
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+ [15]
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+ [16]
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+ [17]
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+\openout4 = `report.pyg'.
+
+
+(./_minted-report/5F9EAD79112502CF1F950865261BA7E3D056FA939DEE1CFB528B6798A1EED
+084.pygtex) [18] [19]
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+\openout3 = `report.ptb'.
+
+ [20]
+\openout3 = `report.ptb'.
+
+ [21]
+Underfull \hbox (badness 10000) in paragraph at lines 1565--1566
+[]\OT1/cmr/m/n/12 GitHub repos-i-tory with pro-jet code-base. Re-trieved from
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1580--1581
+[]\OT1/cmr/m/n/12 Control.ST doc-u-men-ta-tion. (n.d.). Re-trieved from http://
+docs.idris-
+ []
+
+[22]
+Underfull \hbox (badness 10000) in paragraph at lines 1592--1593
+[]\OT1/cmr/m/n/12 Gonzalez, G. (2012, June 09). Haskell for all. Re-trieved fro
+m
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1592--1593
+\OT1/cmr/m/n/12 http://www.haskellforall.com/2012/06/you-could-have-invented-fr
+ee-
+ []
+
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1599.
+[23]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1599.
  (./report.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 656.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 656.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1599.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1599.
+
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: 275A8D5F1B57893E8EB66721DD2BB876;904.
+(rerunfilecheck)             Checksum: E720573098B57C950FC664FBF5E205B6;2312.
+
+
+LaTeX Warning: There were undefined references.
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
 runsystem(rm report.pyg)...executed.
 
  ) 
 Here is how much of TeX's memory you used:
- 10353 strings out of 492642
- 162436 string characters out of 6135565
- 319526 words of memory out of 5000000
- 14035 multiletter control sequences out of 15000+600000
- 14340 words of font info for 55 fonts, out of 8000000 for 9000
+ 10561 strings out of 492642
+ 165660 string characters out of 6135565
+ 320950 words of memory out of 5000000
+ 14196 multiletter control sequences out of 15000+600000
+ 15801 words of font info for 62 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 37i,8n,51p,821b,337s stack positions out of 5000i,500n,10000p,200000b,80000s
-</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/share/
-texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/share/texmf-dist/fon
-ts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texmf-dist/fonts/type1/publi
-c/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/c
-mr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/
-share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-di
-st/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/share/texmf-dist/fonts/type1
-/public/amsfonts/cm/cmtt10.pfb>
-Output written on report.pdf (6 pages, 145434 bytes).
+ 37i,8n,51p,972b,449s stack positions out of 5000i,500n,10000p,200000b,80000s
+</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/share/
+texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texmf-dist/fon
+ts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texmf-dist/fonts/type1/public
+/amsfonts/cm/cmr17.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cm
+r8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/s
+hare/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texmf-dist
+/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texmf-dist/fonts/type1/p
+ublic/amsfonts/cm/cmtt12.pfb>
+Output written on report.pdf (23 pages, 183218 bytes).
 PDF statistics:
- 143 PDF objects out of 1000 (max. 8388607)
- 124 compressed objects within 2 object streams
- 27 named destinations out of 1000 (max. 500000)
- 121 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 314 PDF objects out of 1000 (max. 8388607)
+ 277 compressed objects within 3 object streams
+ 71 named destinations out of 1000 (max. 500000)
+ 257 words of extra memory for PDF output out of 10000 (max. 10000000)
 

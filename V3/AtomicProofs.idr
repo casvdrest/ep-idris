@@ -431,7 +431,34 @@ mutual
                  with (lemma_lift_elem {xs=ys} {ys=rec} (sym leneq) elem) 
     lemma_file_conv {ys = ys} {rec = rec} {fs = fs} elem | (x ** pf) = 
       (x ** (pf, believe_me ())) 
- 
+
+--------------------------------------------------------------------------------
+-- Prove that a file has a certain type
+--------------------------------------------------------------------------------
+
 export total     
 provePathHasType : (p : Path) -> (ft : FType) -> (prf : FSElem p fs) -> Dec (typeIs ft prf)
 provePathHasType p ft prf = decEq (getFType $ fileFromProof prf) ft
+
+--------------------------------------------------------------------------------
+-- Prove that a modification is alowed on a file
+--------------------------------------------------------------------------------
+
+||| Some propositions about the So type
+lemma_so_eq : {P : Bool} -> P = True -> So P
+lemma_so_eq Refl = Oh
+
+eq_from_so : {P : Bool} -> So P -> P = True
+eq_from_so Oh = Refl
+
+lemma_so_neq : {P : Bool} -> (P = True -> Void) -> So P -> Void
+lemma_so_neq contra = contra . eq_from_so
+
+||| Construct a proof that a given modification is allowed on the input file 
+export total 
+proveModAllowed : (p : Path) -> (m : FMod) -> (u : User) 
+                             -> (prf : FSElem p fs) 
+                             -> Dec (checkAuth m u prf)
+proveModAllowed p m u prf with (decEq (modAllowed m u (getMD (fileFromProof prf))) True)
+  proveModAllowed p m u prf | (Yes x) = Yes (lemma_so_eq x)
+  proveModAllowed p m u prf | (No contra) = No (lemma_so_neq contra)
